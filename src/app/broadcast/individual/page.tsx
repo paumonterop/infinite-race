@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import BroadcastFrame from "@/components/broadcast/BroadcastFrame";
 import Ticker from "@/components/broadcast/Ticker";
+import Panel, { PanelHeader } from "@/components/broadcast/Panel";
 import { useLive } from "@/lib/client/useLive";
 
 function IndividualOverlay() {
@@ -19,33 +20,19 @@ function IndividualOverlay() {
   return (
     <BroadcastFrame>
       {runner ? (
-        <div
-          className="animate-pop-in"
-          style={{
-            position: "absolute",
-            left: 90,
-            bottom: 190,
-            background: "rgba(11,15,20,0.85)",
-            border: "2px solid #0EA5E9",
-            borderRadius: 20,
-            padding: "30px 50px",
-            minWidth: 620,
-          }}
-        >
-          <div style={{ fontSize: 26, fontWeight: 800, color: "#0EA5E9", letterSpacing: 2 }}>
-            DORSAL {runner.bib}
-          </div>
-          <div style={{ fontSize: 56, fontWeight: 900, margin: "8px 0" }}>
+        <Panel>
+          <PanelHeader title={`DORSAL ${runner.bib}`} />
+          <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>
             {runner.first_name} {runner.last_name}
           </div>
-          <div style={{ display: "flex", gap: 40, fontSize: 30, fontWeight: 700, opacity: 0.9 }}>
-            <span>{runner.laps_completed} LAPS</span>
+          <div style={{ display: "flex", gap: 20, fontSize: 15, fontWeight: 700, opacity: 0.9 }}>
+            <span>{runner.laps_completed} VOLTES</span>
             <span>{runner.total_km} KM</span>
             <span>+{runner.total_elevation} M+</span>
           </div>
-        </div>
+        </Panel>
       ) : (
-        <p style={{ position: "absolute", top: 60, left: 90, fontSize: 30, opacity: 0.5 }}>
+        <p style={{ position: "absolute", top: 40, left: 40, fontSize: 18, opacity: 0.5 }}>
           Cap corredor seleccionat
         </p>
       )}

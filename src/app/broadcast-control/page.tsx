@@ -127,12 +127,6 @@ export default function BroadcastControlPage() {
 
         <div className="mb-8 grid gap-4 lg:grid-cols-2">
           <div>
-            <BroadcastPreview src={programSrc} label="🔴 PROGRAM — EN DIRECTE (vMix)" accent="#ef4444" />
-            <p className="mt-2 text-xs text-slate-500">
-              Això és exactament el que hi ha ara a <code>/broadcast</code>.
-            </p>
-          </div>
-          <div>
             <BroadcastPreview
               src={previewSrc}
               label="🔵 PREVIEW — encara no en directe"
@@ -145,6 +139,12 @@ export default function BroadcastControlPage() {
             >
               ▶ TAKE TO AIR
             </button>
+          </div>
+          <div>
+            <BroadcastPreview src={programSrc} label="🔴 PROGRAM — EN DIRECTE (vMix)" accent="#ef4444" />
+            <p className="mt-2 text-xs text-slate-500">
+              Això és exactament el que hi ha ara a <code>/broadcast</code>.
+            </p>
           </div>
         </div>
 
@@ -271,6 +271,10 @@ export default function BroadcastControlPage() {
             </li>
             <li>
               <code className="text-slate-400">/broadcast/ticker</code> — ticker independent
+            </li>
+            <li>
+              <code className="text-slate-400">/cronometre_pantalla</code> — cronòmetre a pantalla
+              completa (1920x1080), sense cap altre gràfic
             </li>
           </ul>
         </div>
