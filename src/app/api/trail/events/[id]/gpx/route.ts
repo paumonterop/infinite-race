@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { emitUpdate } from "@/lib/io";
 import { parseGpx } from "@/lib/trail/gpx";
 import { getEvent, persistTrail } from "@/lib/trail/store";
+import { startSurface } from "@/lib/trail/surface";
 
 /** multipart: file (GPX) + race (id de la cursa). DELETE ?race=<id> treu el GPX. */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -19,6 +20,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: e.message }, { status: 400 });
   }
   persistTrail();
+  // Una sola consulta a OpenStreetMap per GPX: es fa ara, en carregar-lo (i es desa; si el mateix GPX ja hi és, no es repeteix).
+  startSurface(ev.id, race.id, race.gpx);
   emitUpdate("trail:changed", { id: ev.id });
   return NextResponse.json({ ok: true, km: race.gpx.total_km, gain: race.gpx.elevation_gain });
 }

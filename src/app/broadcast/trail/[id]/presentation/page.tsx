@@ -26,7 +26,7 @@ function Overlay({ id }: { id: string }) {
 
   const race = ev?.races.find((r: any) => r.id === p.get("race")) ?? ev?.races[0];
   return (
-    <BroadcastFrame>
+    <BroadcastFrame transparentDefault>
       {race && (
         <TrailPresentation
           race={{

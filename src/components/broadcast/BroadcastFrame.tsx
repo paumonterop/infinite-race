@@ -2,10 +2,22 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function BroadcastFrame({ children }: { children: React.ReactNode }) {
+/**
+ * Llenç 1920x1080 escalat a la finestra. TRANSPARENT per defecte (vMix/OBS); ?transparent=0 posa un fons fosc per
+ * mirar-les al navegador.
+ */
+export default function BroadcastFrame({ children, transparentDefault = true }: { children: React.ReactNode; transparentDefault?: boolean }) {
   const params = useSearchParams();
-  const transparent = params.get("transparent") === "1";
+  const p = params.get("transparent");
+  const transparent = p == null ? transparentDefault : p === "1";
   const [scale, setScale] = useState(1);
+
+  // El fons fosc global (html/body) també s'ha de treure, si no a vMix/OBS no és transparent de debò.
+  useEffect(() => {
+    if (!transparent) return;
+    document.documentElement.classList.add("bc-transparent");
+    return () => document.documentElement.classList.remove("bc-transparent");
+  }, [transparent]);
 
   useEffect(() => {
     const fit = () => {

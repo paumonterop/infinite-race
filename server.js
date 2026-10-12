@@ -23,9 +23,32 @@ function isLoopback(req) {
   return a === "127.0.0.1" || a === "::1" || a === "::ffff:127.0.0.1";
 }
 
+// Sortides de broadcast (vMix/OBS) i la LECTURA (GET) de les dades que necessiten: sense contrasenya.
+// Tot el que modifica (POST/PUT/PATCH/DELETE) i les pantalles d'operació continuen protegits.
+const PUBLIC_GET = [
+  "/broadcast", // pàgines de sortida (no inclou /broadcast-control, que és d'operació)
+  "/_next",
+  "/flags",
+  "/icons",
+  "/favicon.ico",
+  "/api/trail/events",
+  "/api/time",
+  "/api/broadcast/state",
+  "/api/runners",
+  "/api/leaderboard",
+  "/api/race",
+  "/api/stats",
+];
+
+function isPublicRead(req, pathname) {
+  if (req.method !== "GET" && req.method !== "HEAD") return false;
+  return PUBLIC_GET.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 /** Torna true si la petició pot continuar; si no, ja ha respost 401. */
 function checkAuth(req, res, pathname) {
   if (!AUTH_PASS) return true;
+  if (isPublicRead(req, pathname)) return true;
   // crides internes del propi servidor (tick de curses i sincronització)
   if (pathname.startsWith("/api/internal/") && isLoopback(req)) return true;
   const h = req.headers.authorization || "";

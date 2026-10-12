@@ -47,3 +47,9 @@ html, body {
   50% { color: #fca5a5; }
 }
 .animate-flash-crit { animation: flash-crit 1s ease-in-out infinite; }
+
+/* Pantalles de broadcast amb fons transparent (vMix/OBS): ni html ni body poden pintar fons. */
+html.bc-transparent,
+html.bc-transparent body {
+  background: transparent !important;
+}

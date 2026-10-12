@@ -1,10 +1,12 @@
 import { simplifyForClient } from "./gpx";
+import { othersOf } from "./others";
 import type { TrailEvent } from "./types";
 
 /** Versió lleugera d'un esdeveniment per al navegador (traça reduïda, sense passos individuals). */
 export function eventView(ev: TrailEvent) {
   return {
     ...ev,
+    others: othersOf(ev),
     races: ev.races.map((r) => ({
       ...r,
       gpx: r.gpx

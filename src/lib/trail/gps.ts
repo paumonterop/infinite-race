@@ -1,4 +1,5 @@
-import { projectOnTrack } from "./gpx";
+import { defaultLabel } from "./devices";
+import { gradientAt, projectOnTrack } from "./gpx";
 import type { GpsPosition, TrailEvent } from "./types";
 
 /** Dades crues tal com les envien les motxilles (event Socket.IO `gps_data`). Només en memòria. */
@@ -18,6 +19,8 @@ declare global {
 }
 
 export const OFFLINE_AFTER_MS = 10_000;
+
+export { defaultLabel };
 const OFF_ROUTE_M = 500;
 
 export function rawGps(): Record<string, RawGps> {
@@ -68,15 +71,20 @@ export function positionsFor(ev: TrailEvent, now = Date.now()): GpsPosition[] {
     let km: number | null = null;
     let pct: number | null = null;
     let off = false;
+    let grad: number | null = null;
+    let ele: number | null = null;
     if (online && race?.gpx) {
       const p = projectOnTrack(race.gpx, lat!, lon!);
       off = p.off_route_m > OFF_ROUTE_M;
       km = +p.km.toFixed(2);
       pct = Math.min(100, +((p.km / race.gpx.total_km) * 100).toFixed(1));
+      const g = gradientAt(race.gpx, p.km);
+      grad = g.gradient_pct;
+      ele = g.ele_m;
     }
     out.push({
       id,
-      label: dev?.label || id,
+      label: dev?.label || defaultLabel(id),
       lat: lat ?? null,
       lon: lon ?? null,
       speed_kmh: r?.speed_kmh ?? null,
@@ -88,6 +96,8 @@ export function positionsFor(ev: TrailEvent, now = Date.now()): GpsPosition[] {
       km,
       pct,
       off_route: off,
+      gradient_pct: grad,
+      ele_m: ele,
     });
   }
   return out;

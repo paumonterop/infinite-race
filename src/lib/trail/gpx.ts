@@ -93,3 +93,28 @@ export function pointAtKm(gpx: TrailGpx, km: number): [number, number] {
   const l = pts[pts.length - 1];
   return [l[0], l[1]];
 }
+
+/** Pendent (%) i altitud (m) a un km de la traça, mesurats sobre una finestra de +-100 m. */
+export function gradientAt(gpx: TrailGpx, km: number): { gradient_pct: number; ele_m: number | null } {
+  const eleAt = (k: number): number | null => {
+    const pts = gpx.points;
+    if (k <= pts[0][2]) return pts[0][3] ?? null;
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i][2] >= k) {
+        const k1 = pts[i - 1][2], e1 = pts[i - 1][3];
+        const k2 = pts[i][2], e2 = pts[i][3];
+        if (e1 == null || e2 == null || Number.isNaN(e1) || Number.isNaN(e2)) return null;
+        return k2 === k1 ? e2 : e1 + ((k - k1) / (k2 - k1)) * (e2 - e1);
+      }
+    }
+    return pts[pts.length - 1][3] ?? null;
+  };
+  const a = Math.max(0, km - 0.1);
+  const b = Math.min(gpx.total_km, km + 0.1);
+  const ea = eleAt(a);
+  const eb = eleAt(b);
+  const here = eleAt(km);
+  const ele = here == null ? null : Math.round(here);
+  if (ea == null || eb == null || b - a <= 0) return { gradient_pct: 0, ele_m: ele };
+  return { gradient_pct: +(((eb - ea) / ((b - a) * 1000)) * 100).toFixed(1), ele_m: ele };
+}

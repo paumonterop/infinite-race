@@ -1,3 +1,6 @@
+import type { Other } from "./others";
+import type { Program } from "./scenes";
+
 export interface TrailGpx {
   file_name: string;
   total_km: number;
@@ -62,22 +65,15 @@ export interface GpsDevice {
   bib: string | null;
 }
 
-export type SceneId = "none" | "presentation" | "presentation_profile";
-
-/** Què hi ha "en antena" a la sortida de vMix (/broadcast/trail/<id>). */
-export interface Program {
-  scene: SceneId;
-  race_id: string | null;
-  ticker: boolean;
-  updated_at: string;
-}
-
 export interface TrailEvent {
   id: string;
   name: string;
   sport: "trail";
   flag?: string; // bandera de les escenes (fitxer a /public/flags)
   program?: Program;
+  others?: Other[];
+  /** Lectura de vMix per triar automàticament la motxilla en programa. input_map: motxilla -> número d'input. */
+  vmix?: { ip: string; port: number; input_map: Record<string, number> };
   livetrail: {
     url: string;
     tenant: string;
@@ -104,4 +100,6 @@ export interface GpsPosition {
   km: number | null;
   pct: number | null;
   off_route: boolean;
+  gradient_pct: number | null;
+  ele_m: number | null;
 }

@@ -17,6 +17,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const b = await req.json().catch(() => ({}));
   if (typeof b.name === "string" && b.name.trim()) ev.name = b.name.trim();
   if (typeof b.flag === "string") ev.flag = b.flag.replace(/[^a-z0-9-]/gi, "") || undefined;
+  if (b.vmix && typeof b.vmix === "object") {
+    const map: Record<string, number> = {};
+    for (const [k, v] of Object.entries(b.vmix.input_map ?? {})) {
+      const n = parseInt(String(v), 10);
+      if (!Number.isNaN(n) && n > 0) map[k] = n;
+    }
+    ev.vmix = { ip: String(b.vmix.ip ?? "").trim(), port: parseInt(String(b.vmix.port ?? "8099"), 10) || 8099, input_map: map };
+  }
   if (Array.isArray(b.races)) {
     for (const u of b.races) {
       const r = ev.races.find((x) => x.id === u.id);

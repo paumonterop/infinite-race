@@ -8,7 +8,7 @@ import TrailTicker from "@/components/broadcast/TrailTicker";
 function Overlay({ id }: { id: string }) {
   const p = useSearchParams();
   return (
-    <BroadcastFrame>
+    <BroadcastFrame transparentDefault>
       <TrailTicker eventId={id} raceId={p.get("race")} backlog={parseInt(p.get("backlog") ?? "6", 10)} />
     </BroadcastFrame>
   );
