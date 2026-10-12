@@ -25,6 +25,26 @@ app.prepare().then(() => {
 
   io.on("connection", (socket) => {
     socket.emit("connected", { ok: true });
+
+    // Motxilles GPS: mateix protocol que el servei antic (event "gps_data").
+    socket.on("gps_data", (data) => {
+      try {
+        if (typeof data === "string") data = JSON.parse(data);
+        if (!data || !data.id) return;
+        global.__gps_raw__ = global.__gps_raw__ || {};
+        global.__gps_raw__[String(data.id)] = {
+          id: String(data.id),
+          lat: data.lat,
+          lon: data.lon,
+          speed_kmh: data.speed_kmh == null ? null : data.speed_kmh,
+          alt: data.alt == null ? null : data.alt,
+          num_sats: data.num_sats == null ? null : data.num_sats,
+          received_at: Date.now(),
+        };
+      } catch (e) {
+        /* paquet invàlid: l'ignorem */
+      }
+    });
   });
 
   // Server-side tick: checks whether the current lap has expired and
@@ -33,6 +53,7 @@ app.prepare().then(() => {
   // frequency, not the source of truth for timing.
   setInterval(() => {
     fetch(`http://127.0.0.1:${port}/api/internal/tick`, { method: "POST" }).catch(() => {});
+    fetch(`http://127.0.0.1:${port}/api/internal/trail-tick`, { method: "POST" }).catch(() => {});
   }, 1000);
 
   httpServer.listen(port, () => {
