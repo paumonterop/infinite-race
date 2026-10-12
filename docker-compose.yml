@@ -5,5 +5,9 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      # Definits al fitxer .env del servidor (no es puja a git)
+      - AUTH_USER=${AUTH_USER:-admin}
+      - AUTH_PASS=${AUTH_PASS:?cal definir AUTH_PASS al fitxer .env}
     volumes:
       - ./data:/app/data

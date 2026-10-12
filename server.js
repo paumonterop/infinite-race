@@ -2,10 +2,42 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
 const { Server } = require("socket.io");
+const crypto = require("crypto");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
+
+// Autenticació HTTP Basic. Només s'activa si AUTH_PASS està definit (a producció, via variable d'entorn).
+const AUTH_USER = process.env.AUTH_USER || "admin";
+const AUTH_PASS = process.env.AUTH_PASS || "";
+
+function safeEqual(a, b) {
+  const ha = crypto.createHash("sha256").update(a).digest();
+  const hb = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+function isLoopback(req) {
+  const a = req.socket.remoteAddress || "";
+  return a === "127.0.0.1" || a === "::1" || a === "::ffff:127.0.0.1";
+}
+
+/** Torna true si la petició pot continuar; si no, ja ha respost 401. */
+function checkAuth(req, res, pathname) {
+  if (!AUTH_PASS) return true;
+  // crides internes del propi servidor (tick de curses i sincronització)
+  if (pathname.startsWith("/api/internal/") && isLoopback(req)) return true;
+  const h = req.headers.authorization || "";
+  if (h.startsWith("Basic ")) {
+    const raw = Buffer.from(h.slice(6), "base64").toString("utf8");
+    const i = raw.indexOf(":");
+    if (i >= 0 && safeEqual(raw.slice(0, i), AUTH_USER) && safeEqual(raw.slice(i + 1), AUTH_PASS)) return true;
+  }
+  res.writeHead(401, { "WWW-Authenticate": 'Basic realm="Plataforma", charset="UTF-8"', "Content-Type": "text/plain; charset=utf-8" });
+  res.end("Cal autenticació");
+  return false;
+}
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -13,6 +45,7 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
+    if (!checkAuth(req, res, parsedUrl.pathname || "/")) return;
     handle(req, res, parsedUrl);
   });
 
