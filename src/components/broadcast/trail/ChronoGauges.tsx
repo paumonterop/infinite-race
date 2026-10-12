@@ -42,8 +42,8 @@ function useNow(offset: number) {
   return now;
 }
 
-/** Text del cronòmetre d'una cursa: temps transcorregut des de la sortida, o compte enrere abans de sortir. */
-/** hh:mm:ss amb hores de dues xifres (00:12:05); si passen de 99 h (compte enrere de dies) en surten tres. */
+/** Text del cronòmetre d'una cursa: temps transcorregut des de la sortida (00:00:00 fins que surt). */
+/** hh:mm:ss amb hores de dues xifres (00:12:05). */
 function hhmmss(total: number) {
   const s = Math.max(0, Math.floor(total));
   const p = (n: number) => String(n).padStart(2, "0");
@@ -53,7 +53,8 @@ function hhmmss(total: number) {
 function clockText(startIso: string | null, now: number) {
   if (!startIso) return { text: "--:--:--", before: false };
   const diff = Math.floor((now - new Date(startIso).getTime()) / 1000);
-  return diff < 0 ? { text: hhmmss(-diff), before: true } : { text: hhmmss(diff), before: false };
+  // abans de la sortida es queda a 00:00:00 (sense compte enrere)
+  return { text: hhmmss(diff < 0 ? 0 : diff), before: false };
 }
 
 function Clock({ show, text, label, color, before, fromLeft = false }: { show: boolean; text: string; label?: string; color: string; before?: boolean; fromLeft?: boolean }) {
