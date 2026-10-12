@@ -5,7 +5,7 @@ import type { GpsPosition } from "@/lib/trail/types";
 import type { VmixStatus } from "@/lib/trail/vmix";
 import { cornerStyle, isLeft, layoutOf } from "@/lib/trail/layout";
 import { SceneProps, raceOf } from "./RaceScenes";
-import { STAGE, T, fmtHMS, useSceneAnim } from "./ui";
+import { STAGE, T, useSceneAnim } from "./ui";
 
 /** Diferència (ms) entre el rellotge del servidor i el del navegador, perquè els cronòmetres no depenguin de l'hora del PC. */
 export function useServerOffset() {
@@ -43,10 +43,17 @@ function useNow(offset: number) {
 }
 
 /** Text del cronòmetre d'una cursa: temps transcorregut des de la sortida, o compte enrere abans de sortir. */
+/** hh:mm:ss amb hores de dues xifres (00:12:05); si passen de 99 h (compte enrere de dies) en surten tres. */
+function hhmmss(total: number) {
+  const s = Math.max(0, Math.floor(total));
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
+}
+
 function clockText(startIso: string | null, now: number) {
   if (!startIso) return { text: "--:--:--", before: false };
   const diff = Math.floor((now - new Date(startIso).getTime()) / 1000);
-  return diff < 0 ? { text: fmtHMS(-diff), before: true } : { text: fmtHMS(diff), before: false };
+  return diff < 0 ? { text: hhmmss(-diff), before: true } : { text: hhmmss(diff), before: false };
 }
 
 function Clock({ show, text, label, color, before, fromLeft = false }: { show: boolean; text: string; label?: string; color: string; before?: boolean; fromLeft?: boolean }) {
