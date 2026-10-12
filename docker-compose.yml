@@ -1,0 +1,9 @@
+services:
+  sports:
+    build: .
+    container_name: gfx-sports
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
