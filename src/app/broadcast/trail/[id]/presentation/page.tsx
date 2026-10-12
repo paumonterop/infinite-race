@@ -40,7 +40,7 @@ function Overlay({ id }: { id: string }) {
           eventName={ev?.name}
           isLive={live}
           showProfile={p.get("profile") === "1"}
-          flag={p.get("flag") ?? "es-ct"}
+          flag={p.get("flag") ?? ev?.flag ?? "es-ct"}
         />
       )}
     </BroadcastFrame>

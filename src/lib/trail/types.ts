@@ -62,10 +62,22 @@ export interface GpsDevice {
   bib: string | null;
 }
 
+export type SceneId = "none" | "presentation" | "presentation_profile";
+
+/** Què hi ha "en antena" a la sortida de vMix (/broadcast/trail/<id>). */
+export interface Program {
+  scene: SceneId;
+  race_id: string | null;
+  ticker: boolean;
+  updated_at: string;
+}
+
 export interface TrailEvent {
   id: string;
   name: string;
   sport: "trail";
+  flag?: string; // bandera de les escenes (fitxer a /public/flags)
+  program?: Program;
   livetrail: {
     url: string;
     tenant: string;

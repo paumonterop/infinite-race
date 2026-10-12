@@ -1,48 +1,18 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import TrailNav from "@/components/trail/TrailNav";
 import { useLive } from "@/lib/client/useLive";
+import { fmtClock, fmtDate, fmtTime } from "@/lib/client/format";
 
-function fmtTime(s: number | null) {
-  if (s == null) return "—";
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
-
-function fmtDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("ca-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  REGISTERED: "Inscrit",
-  RUNNING: "En cursa",
-  FINISHED: "Arribat",
-  DNF: "Retirat",
-  DNS: "No sortit",
-};
-
-export default function EventPage({ params }: { params: { id: string } }) {
+export default function DashboardPage({ params }: { params: { id: string } }) {
   const { data: ev, refetch } = useLive<any>(`/api/trail/events/${params.id}`, ["trail:changed"], 5000);
-  const [sel, setSel] = useState<string | null>(null);
-  const [q, setQ] = useState("");
+  const { data: feed } = useLive<{ items: any[] }>(
+    `/api/trail/events/${params.id}/feed?backlog=14`,
+    ["trail:feed"],
+    4000
+  );
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-
-  const race = useMemo(() => {
-    if (!ev) return null;
-    return ev.races.find((r: any) => r.id === sel) ?? ev.races[0] ?? null;
-  }, [ev, sel]);
-
-  const runners = useMemo(() => {
-    if (!race) return [];
-    const s = q.trim().toLowerCase();
-    return race.runners
-      .filter((r: any) => !s || `${r.bib} ${r.first_name} ${r.last_name} ${r.club}`.toLowerCase().includes(s))
-      .sort((a: any, b: any) => (a.rank ?? 1e9) - (b.rank ?? 1e9) || Number(a.bib) - Number(b.bib));
-  }, [race, q]);
 
   async function sync(registrants: boolean) {
     setBusy(registrants ? "reg" : "sync");
@@ -58,22 +28,8 @@ export default function EventPage({ params }: { params: { id: string } }) {
     refetch();
   }
 
-  async function upload(raceId: string, file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("race", raceId);
-    const res = await fetch(`/api/trail/events/${params.id}/gpx`, { method: "POST", body: fd });
-    const j = await res.json();
-    setMsg(res.ok ? `GPX carregat: ${j.km} km, +${j.gain} m` : `⚠ ${j.error}`);
-    refetch();
-  }
-
-  async function removeGpx(raceId: string) {
-    await fetch(`/api/trail/events/${params.id}/gpx?race=${raceId}`, { method: "DELETE" });
-    refetch();
-  }
-
   if (!ev) return <TrailNav eventId={params.id} />;
+  const recent = [...(feed?.items ?? [])].reverse();
 
   return (
     <div>
@@ -105,18 +61,12 @@ export default function EventPage({ params }: { params: { id: string } }) {
           </button>
         </div>
 
-        <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <div className="mb-6 grid gap-4 lg:grid-cols-3">
           {ev.races.map((r: any) => {
-            const running = r.runners.filter((x: any) => x.status === "RUNNING").length;
-            const fin = r.runners.filter((x: any) => x.status === "FINISHED").length;
+            const c = (s: string) => r.runners.filter((x: any) => x.status === s).length;
+            const top = r.runners.filter((x: any) => x.rank).sort((a: any, b: any) => a.rank - b.rank).slice(0, 3);
             return (
-              <div
-                key={r.id}
-                onClick={() => setSel(r.id)}
-                className={`cursor-pointer rounded-2xl border p-4 transition ${
-                  race?.id === r.id ? "border-sky-500/60 bg-sky-500/5" : "border-white/10 bg-white/[0.02] hover:border-white/30"
-                }`}
-              >
+              <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full" style={{ background: r.color }} />
                   <h2 className="font-black">{r.name}</h2>
@@ -124,97 +74,75 @@ export default function EventPage({ params }: { params: { id: string } }) {
                 </div>
                 <p className="mt-1 text-xs text-slate-400">
                   Sortida {fmtDate(r.start_iso)} · {r.distance_m ? (r.distance_m / 1000).toFixed(1) : "?"} km · +{r.elevation_gain ?? "?"} m
+                  {!r.gpx && <span className="ml-2 font-semibold text-amber-400">sense GPX</span>}
                 </p>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="mt-3 grid grid-cols-4 gap-2 text-center">
                   <Stat label="INSCRITS" value={r.runners.length} />
-                  <Stat label="EN CURSA" value={running} />
-                  <Stat label="ARRIBATS" value={fin} />
+                  <Stat label="EN CURSA" value={c("RUNNING")} color="text-emerald-400" />
+                  <Stat label="ARRIBATS" value={c("FINISHED")} color="text-sky-400" />
+                  <Stat label="RETIRATS" value={c("DNF")} color="text-red-400" />
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-xs" onClick={(e) => e.stopPropagation()}>
-                  {r.gpx ? (
-                    <>
-                      <span className="font-semibold text-emerald-400">
-                        GPX ✓ {r.gpx.total_km} km · +{r.gpx.elevation_gain} m
+                <div className="mt-3 space-y-1">
+                  <div className="text-[10px] font-bold tracking-widest text-slate-500">LÍDERS</div>
+                  {top.length === 0 && <p className="text-sm text-slate-500">Sense dades encara</p>}
+                  {top.map((x: any) => (
+                    <div key={x.bib} className="flex items-center gap-2 text-sm">
+                      <span className="mono-num w-5 font-black text-slate-400">{x.rank}</span>
+                      <span className="font-mono text-slate-400">#{x.bib}</span>
+                      <span className="truncate font-semibold">
+                        {x.first_name} {x.last_name}
                       </span>
-                      <button onClick={() => removeGpx(r.id)} className="ml-auto text-slate-500 hover:text-red-400">
-                        treure
-                      </button>
-                    </>
-                  ) : (
-                    <label className="cursor-pointer rounded-md bg-white/10 px-3 py-1.5 font-bold hover:bg-white/20">
-                      Pujar GPX
-                      <input type="file" accept=".gpx" hidden onChange={(e) => e.target.files?.[0] && upload(r.id, e.target.files[0])} />
-                    </label>
-                  )}
+                      <span className="mono-num ml-auto text-slate-300">{fmtTime(x.race_time_s)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {race && (
-          <div className="rounded-2xl border border-white/10">
-            <div className="flex flex-wrap items-center gap-3 border-b border-white/10 px-5 py-3">
-              <h2 className="text-xs font-bold tracking-widest text-slate-400">ATLETES — {race.name.toUpperCase()}</h2>
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Cerca per dorsal, nom o club…"
-                className="ml-auto w-72 rounded-lg border border-white/10 bg-[#0b0f14] px-3 py-1.5 text-sm"
-              />
-            </div>
-            <div className="max-h-[560px] overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-[#0b0f14] text-left text-xs text-slate-500">
-                  <tr>
-                    <th className="px-4 py-2">POS</th>
-                    <th className="px-4 py-2">DORSAL</th>
-                    <th className="px-4 py-2">ATLETA</th>
-                    <th className="px-4 py-2">CAT.</th>
-                    <th className="px-4 py-2">CLUB</th>
-                    <th className="px-4 py-2">ÚLTIM CONTROL</th>
-                    <th className="px-4 py-2">TEMPS</th>
-                    <th className="px-4 py-2">ESTAT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {runners.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
-                        Sense atletes. Quan LiveTrail publiqui la llista, prem «Importar inscrits».
-                      </td>
-                    </tr>
-                  )}
-                  {runners.map((r: any) => (
-                    <tr key={r.bib} className="border-t border-white/5 hover:bg-white/[0.03]">
-                      <td className="mono-num px-4 py-2">{r.rank ?? "—"}</td>
-                      <td className="px-4 py-2 font-mono">{r.bib}</td>
-                      <td className="px-4 py-2 font-semibold">
-                        {r.first_name} {r.last_name}
-                      </td>
-                      <td className="px-4 py-2 text-slate-400">{r.category}</td>
-                      <td className="px-4 py-2 text-slate-400">{r.club}</td>
-                      <td className="px-4 py-2">
-                        {r.last_point_name ? `${r.last_point_name} (${r.last_point_km} km)` : "—"}
-                      </td>
-                      <td className="mono-num px-4 py-2">{fmtTime(r.race_time_s)}</td>
-                      <td className="px-4 py-2 text-slate-300">{STATUS_LABEL[r.status] ?? r.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="rounded-2xl border border-white/10">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
+            <h2 className="text-xs font-bold tracking-widest text-slate-400">ÚLTIMS PASSOS PER CONTROL</h2>
+            <a href={`/events/${params.id}/broadcast`} className="text-xs font-bold text-sky-400 hover:underline">
+              Obrir broadcast →
+            </a>
           </div>
-        )}
+          {recent.length === 0 ? (
+            <p className="px-5 py-6 text-center text-slate-500">Encara no hi ha cap pas. Apareixeran aquí en directe durant la cursa.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <tbody>
+                {recent.map((it) => (
+                  <tr key={it.seq} className="border-t border-white/5">
+                    <td className="px-4 py-2">
+                      <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: it.color }} />
+                      <span className="text-slate-400">{it.race_name}</span>
+                    </td>
+                    <td className="px-4 py-2 font-mono">#{it.bib}</td>
+                    <td className="px-4 py-2 font-semibold">{it.name}</td>
+                    <td className="px-4 py-2">
+                      {it.is_finish ? "🏁 " : ""}
+                      {it.point_name} <span className="text-slate-500">km {it.point_km}</span>
+                    </td>
+                    <td className="mono-num px-4 py-2">{fmtTime(it.race_time_s)}</td>
+                    <td className="mono-num px-4 py-2 text-slate-400">{it.pos}º</td>
+                    <td className="mono-num px-4 py-2 text-right text-slate-500">{fmtClock(it.at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </main>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, color = "text-white" }: { label: string; value: number; color?: string }) {
   return (
     <div className="rounded-lg bg-white/5 py-2">
-      <div className="mono-num text-xl font-black">{value}</div>
+      <div className={`mono-num text-xl font-black ${color}`}>{value}</div>
       <div className="text-[9px] font-bold tracking-widest text-slate-500">{label}</div>
     </div>
   );

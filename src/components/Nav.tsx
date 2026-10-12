@@ -2,17 +2,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BRAND } from "@/lib/brand";
+import { SPORTS } from "@/lib/sports";
 
-const LINKS = [
-  { href: "/backyard", label: "Dashboard" },
-  { href: "/control", label: "Control de Volta" },
-  { href: "/runners", label: "Corredors" },
-  { href: "/leaderboard", label: "Classificacions" },
-  { href: "/stats", label: "Estadístiques" },
-  { href: "/import", label: "Importar" },
-  { href: "/broadcast-control", label: "Broadcast" },
-  { href: "/config", label: "Configuració" },
-];
+const LINKS = SPORTS.backyard.sections("");
 
 export default function Nav() {
   const pathname = usePathname();

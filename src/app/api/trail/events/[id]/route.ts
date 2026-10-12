@@ -1,11 +1,31 @@
 export const dynamic = "force-dynamic";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { emitUpdate } from "@/lib/io";
 import { getEvent, persistTrail, trailStore } from "@/lib/trail/store";
 import { eventView } from "@/lib/trail/view";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const ev = getEvent(params.id);
   if (!ev) return NextResponse.json({ error: "No existeix" }, { status: 404 });
+  return NextResponse.json(eventView(ev));
+}
+
+/** body: { name?, flag?, races?: [{ id, name?, color? }] } */
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const ev = getEvent(params.id);
+  if (!ev) return NextResponse.json({ error: "No existeix" }, { status: 404 });
+  const b = await req.json().catch(() => ({}));
+  if (typeof b.name === "string" && b.name.trim()) ev.name = b.name.trim();
+  if (typeof b.flag === "string") ev.flag = b.flag.replace(/[^a-z0-9-]/gi, "") || undefined;
+  if (Array.isArray(b.races)) {
+    for (const u of b.races) {
+      const r = ev.races.find((x) => x.id === u.id);
+      if (!r) continue;
+      if (typeof u.color === "string" && /^#[0-9a-f]{6}$/i.test(u.color)) r.color = u.color;
+    }
+  }
+  persistTrail();
+  emitUpdate("trail:changed", { id: ev.id });
   return NextResponse.json(eventView(ev));
 }
 

@@ -2,13 +2,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BRAND } from "@/lib/brand";
+import { SPORTS } from "@/lib/sports";
 
 export default function TrailNav({ eventId, name }: { eventId: string; name?: string }) {
   const pathname = usePathname();
-  const links = [
-    { href: `/events/${eventId}`, label: "Cursa" },
-    { href: `/events/${eventId}/map`, label: "Mapa GPS" },
-  ];
+  const base = `/events/${eventId}`;
+  const links = SPORTS.trail.sections(base);
   return (
     <nav className="sticky top-0 z-[1000] border-b border-white/10 bg-[#0b0f14]/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1600px] items-center gap-1 overflow-x-auto px-4 py-2">

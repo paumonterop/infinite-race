@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { BRAND } from "@/lib/brand";
+import { SPORTS } from "@/lib/sports";
 import { useLive } from "@/lib/client/useLive";
 
 interface EventSummary {
@@ -18,14 +19,26 @@ function fmtStart(iso: string | null) {
   return new Date(iso).toLocaleString("ca-ES", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+const BACKYARD_STATUS: Record<string, string> = {
+  SETUP: "Preparació",
+  READY: "Llest",
+  RUNNING: "En curs",
+  PAUSED: "En pausa",
+  FINISHED: "Finalitzada",
+};
+
 export default function HomePage() {
-  const { data: events, refetch } = useLive<EventSummary[]>("/api/trail/events", ["trail:changed"], 8000);
+  const { data: trail } = useLive<EventSummary[]>("/api/trail/events", ["trail:changed"], 8000);
+  const { data: race } = useLive<any>("/api/race", ["race:changed"], 5000);
+  const { data: stats } = useLive<any>("/api/stats", ["race:changed", "runners:changed"], 5000);
+
+  const [creating, setCreating] = useState<"trail" | null>(null);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function create(e: React.FormEvent) {
+  async function createTrail(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
@@ -45,48 +58,102 @@ export default function HomePage() {
       <header className="border-b border-white/10 bg-[#0b0f14]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <span className="text-lg font-black tracking-tight text-sky-400">⏱ {BRAND}</span>
-          <Link href="/backyard" className="text-sm font-semibold text-slate-400 hover:text-white">
-            Backyard / Infinite Race →
-          </Link>
+          <span className="text-xs font-semibold text-slate-500">Suite de grafismes esportius</span>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-3xl font-black tracking-tight">Esdeveniments</h1>
-        <p className="mt-1 text-slate-400">Crea una cursa de muntanya a partir de LiveTrail i puja'n els GPX.</p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight">Esdeveniments</h1>
+            <p className="mt-1 text-slate-400">Cada esdeveniment té les seves pròpies eines i grafismes segons la modalitat.</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCreating(creating === "trail" ? null : "trail")}
+              className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-black hover:bg-sky-400"
+            >
+              + Nou esdeveniment
+            </button>
+          </div>
+        </div>
 
-        <form onSubmit={create} className="mt-6 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:grid-cols-[1fr_2fr_auto]">
-          <label className="text-xs font-bold tracking-widest text-slate-400">
-            NOM
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Trail del Bisaura 2026"
-              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b0f14] px-3 py-2 text-base font-normal tracking-normal text-white"
-            />
-          </label>
-          <label className="text-xs font-bold tracking-widest text-slate-400">
-            URL DE LIVETRAIL
-            <input
-              required
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://traildelbisaura.v3.livetrail.net/es/2026"
-              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b0f14] px-3 py-2 text-base font-normal tracking-normal text-white"
-            />
-          </label>
-          <button
-            disabled={busy}
-            className="self-end rounded-lg bg-sky-500 px-5 py-2.5 font-bold text-black hover:bg-sky-400 disabled:opacity-50"
-          >
-            {busy ? "Important…" : "Crear cursa"}
-          </button>
-          {error && <p className="text-sm font-semibold text-red-400 md:col-span-3">{error}</p>}
-        </form>
+        {creating && (
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <div className="mb-4 flex flex-wrap gap-2">
+              {Object.values(SPORTS).map((s) => {
+                const available = s.id === "trail";
+                return (
+                  <button
+                    key={s.id}
+                    disabled={!available}
+                    onClick={() => available && setCreating("trail")}
+                    title={available ? "" : "Backyard és un únic esdeveniment per ara: ja hi és a la llista"}
+                    className={`rounded-lg border px-3 py-2 text-left text-sm ${
+                      creating === s.id ? "border-sky-500/60 bg-sky-500/10" : "border-white/10"
+                    } ${available ? "" : "opacity-40"}`}
+                  >
+                    <div className="font-bold" style={{ color: s.accent }}>
+                      {s.label}
+                    </div>
+                    <div className="max-w-xs text-xs text-slate-500">{s.tagline}</div>
+                  </button>
+                );
+              })}
+              <div className="rounded-lg border border-dashed border-white/10 px-3 py-2 text-xs text-slate-600">Més modalitats aviat…</div>
+            </div>
+
+            <form onSubmit={createTrail} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
+              <label className="text-xs font-bold tracking-widest text-slate-400">
+                NOM
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Trail del Bisaura 2026"
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b0f14] px-3 py-2 text-base font-normal tracking-normal text-white"
+                />
+              </label>
+              <label className="text-xs font-bold tracking-widest text-slate-400">
+                URL DE LIVETRAIL
+                <input
+                  required
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://traildelbisaura.v3.livetrail.net/es/2026"
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b0f14] px-3 py-2 text-base font-normal tracking-normal text-white"
+                />
+              </label>
+              <button disabled={busy} className="self-end rounded-lg bg-sky-500 px-5 py-2.5 font-bold text-black hover:bg-sky-400 disabled:opacity-50">
+                {busy ? "Important…" : "Crear"}
+              </button>
+              {error && <p className="text-sm font-semibold text-red-400 md:col-span-3">{error}</p>}
+            </form>
+          </div>
+        )}
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
-          {(events ?? []).length === 0 && <p className="text-slate-500">Encara no hi ha cap esdeveniment.</p>}
-          {(events ?? []).map((ev) => (
+          {/* Backyard / Infinite Race */}
+          <Link
+            href="/backyard"
+            className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#101823] to-[#0b0f14] p-5 transition hover:border-sky-500/50"
+          >
+            <div className="flex items-start justify-between">
+              <h2 className="text-xl font-black">{race?.name ?? "INFINITE RACE"}</h2>
+              <span className="rounded px-2 py-0.5 text-[10px] font-bold tracking-widest" style={{ background: SPORTS.backyard.accent + "33", color: SPORTS.backyard.accent }}>
+                {SPORTS.backyard.badge}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-400">{SPORTS.backyard.tagline}</p>
+            <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+              <Mini label="ESTAT" value={race ? BACKYARD_STATUS[race.status] ?? race.status : "—"} small />
+              <Mini label="VOLTA" value={stats?.currentLap ?? "—"} />
+              <Mini label="ACTIUS" value={stats?.active ?? "—"} />
+              <Mini label="ELIMINATS" value={stats?.eliminated ?? "—"} />
+            </div>
+          </Link>
+
+          {/* Trail */}
+          {(trail ?? []).map((ev) => (
             <Link
               key={ev.id}
               href={`/events/${ev.id}`}
@@ -94,7 +161,9 @@ export default function HomePage() {
             >
               <div className="flex items-start justify-between">
                 <h2 className="text-xl font-black">{ev.name}</h2>
-                <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold tracking-widest text-slate-300">TRAIL</span>
+                <span className="rounded px-2 py-0.5 text-[10px] font-bold tracking-widest" style={{ background: SPORTS.trail.accent + "33", color: SPORTS.trail.accent }}>
+                  {SPORTS.trail.badge}
+                </span>
               </div>
               <div className="mt-3 space-y-1.5">
                 {ev.races.map((r) => (
@@ -112,10 +181,16 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-        <button onClick={() => refetch()} className="sr-only">
-          refresh
-        </button>
       </main>
+    </div>
+  );
+}
+
+function Mini({ label, value, small }: { label: string; value: any; small?: boolean }) {
+  return (
+    <div className="rounded-lg bg-white/5 py-2">
+      <div className={`mono-num font-black ${small ? "text-sm leading-7" : "text-xl"}`}>{value}</div>
+      <div className="text-[9px] font-bold tracking-widest text-slate-500">{label}</div>
     </div>
   );
 }
