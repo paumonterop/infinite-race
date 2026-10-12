@@ -74,6 +74,8 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     path: "/socket.io",
+    // Les motxilles GPS (client python-socketio, no es toquen) poden parlar un protocol més antic: s'accepta també.
+    allowEIO3: true,
   });
 
   // Make the io instance available to API route handlers via a global.

@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+      # Port de sempre de les motxilles GPS (http://<servidor>:10009, event gps_data): mateix servei, sense tocar res a les motxilles
+      - "10009:3000"
     environment:
       # Definits al fitxer .env del servidor (no es puja a git)
       - AUTH_USER=${AUTH_USER:-admin}
