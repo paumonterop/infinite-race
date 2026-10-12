@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import TrailPresentation from "@/components/broadcast/TrailPresentation";
 import { Layer, Program, SCENE_BY_ID, Slot } from "@/lib/trail/scenes";
 import { ChronoAllScene, ChronoScene, GpsGradientScene, GpsSpeedScene } from "./ChronoGauges";
-import { FavoritesScene, HistoryRecordScene, HistoryWinnersScene, LeaderboardScene, PositionTagScene } from "./ListScenes";
+import { FavoritesScene, HistoryRecordScene, HistoryWinnersScene, LeaderboardScene, MiniLeaderboardScene, PositionTagScene, RaceStatsScene } from "./ListScenes";
 import { HighlightsScene, SceneProps, WeatherScene, raceOf } from "./RaceScenes";
 import { OtherChyronScene, RunnerCardScene, RunnerChyronScene } from "./RunnerScenes";
 import { CheckpointScene, SegmentInfoScene, SegmentProfileScene } from "./SegmentScenes";
@@ -52,6 +52,10 @@ export function Scene(props: SceneProps & { shift?: boolean }) {
       return <OtherChyronScene {...props} />;
     case "leaderboard":
       return <LeaderboardScene {...props} />;
+    case "race_stats":
+      return <RaceStatsScene {...props} />;
+    case "leaderboard_mini":
+      return <MiniLeaderboardScene {...props} />;
     case "position_tag":
       return <PositionTagScene {...props} />;
     case "favorites":
@@ -125,8 +129,10 @@ export function ProgramStage({ eventId, ev, program }: { eventId: string; ev: an
   const speedOn = !!rendered.gauge_speed?.live;
   // amb el ticker en antena (barra de 120 px a baix) les escenes inferiors pugen per no quedar tapades
   const sb = program?.ticker ? "180px" : "48px";
+  // amplada ocupada pels dials de motxilla (baix a la dreta): la classificació petita s'hi aparta
+  const gw = ((rendered.gauge_speed?.live ? 1 : 0) + (rendered.gauge_gradient?.live ? 1 : 0)) * 144;
   return (
-    <div style={{ position: "absolute", inset: 0, ["--sb" as any]: sb }}>
+    <div style={{ position: "absolute", inset: 0, ["--sb" as any]: sb, ["--gw" as any]: `${gw}px` }}>
       {(Object.entries(rendered) as [Slot, Rendered][]).map(([slot, r]) => (
         <Scene key={slot + r.key} eventId={eventId} ev={ev} layer={r.layer} isLive={r.live} shift={slot === "gauge_gradient" && speedOn} />
       ))}

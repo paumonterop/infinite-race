@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLive } from "@/lib/client/useLive";
 import type { GpsPosition } from "@/lib/trail/types";
 import type { VmixStatus } from "@/lib/trail/vmix";
+import { cornerStyle, isLeft, layoutOf } from "@/lib/trail/layout";
 import { SceneProps, raceOf } from "./RaceScenes";
 import { STAGE, T, fmtHMS, useSceneAnim } from "./ui";
 
@@ -48,7 +49,7 @@ function clockText(startIso: string | null, now: number) {
   return diff < 0 ? { text: fmtHMS(-diff), before: true } : { text: fmtHMS(diff), before: false };
 }
 
-function Clock({ show, text, label, color, before }: { show: boolean; text: string; label?: string; color: string; before?: boolean }) {
+function Clock({ show, text, label, color, before, fromLeft = false }: { show: boolean; text: string; label?: string; color: string; before?: boolean; fromLeft?: boolean }) {
   return (
     <div
       style={{
@@ -61,7 +62,7 @@ function Clock({ show, text, label, color, before }: { show: boolean; text: stri
         background: T.panelStrong,
         border: `1px solid ${T.line}`,
         boxShadow: T.shadow,
-        transform: show ? "translateX(0)" : "translateX(-130%)",
+        transform: show ? "translateX(0)" : `translateX(${fromLeft ? "-130%" : "130%"})`,
         opacity: show ? 1 : 0,
         transition: "transform 0.7s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease",
       }}
@@ -84,6 +85,7 @@ function Clock({ show, text, label, color, before }: { show: boolean; text: stri
 
 /** Cronòmetre d'una cursa (cantonada superior esquerra). */
 export function ChronoScene({ ev, layer, isLive }: SceneProps) {
+  const cfg = layoutOf(ev, "chrono");
   const race = raceOf(ev, layer);
   const offset = useServerOffset();
   const now = useNow(offset);
@@ -92,8 +94,8 @@ export function ChronoScene({ ev, layer, isLive }: SceneProps) {
   const c = clockText(race.start_iso, now);
   return (
     <div style={STAGE}>
-      <div style={{ position: "absolute", left: 48, top: 40 }}>
-        <Clock show={animated} text={c.text} before={c.before} label={race.name} color={race.color || T.accent} />
+      <div style={cornerStyle(cfg)}>
+        <Clock show={animated} text={c.text} before={c.before} label={race.name} color={race.color || T.accent} fromLeft={isLeft(cfg.corner)} />
       </div>
     </div>
   );
@@ -101,18 +103,19 @@ export function ChronoScene({ ev, layer, isLive }: SceneProps) {
 
 /** Els cronòmetres de totes les curses alhora (apilats). */
 export function ChronoAllScene({ ev, isLive }: SceneProps) {
+  const cfg = layoutOf(ev, "chrono");
   const offset = useServerOffset();
   const now = useNow(offset);
   const { visible, animated } = useSceneAnim(isLive, 900);
   if (!visible || !ev) return null;
   return (
     <div style={STAGE}>
-      <div style={{ position: "absolute", left: 48, top: 40, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ ...cornerStyle(cfg), display: "flex", flexDirection: "column", alignItems: isLeft(cfg.corner) ? "flex-start" : "flex-end", gap: 10 }}>
         {ev.races.map((r: any, i: number) => {
           const c = clockText(r.start_iso, now);
           return (
             <div key={r.id} style={{ transition: `transform 0.7s cubic-bezier(0.22,1,0.36,1) ${i * 80}ms` }}>
-              <Clock show={animated} text={c.text} before={c.before} label={r.name} color={r.color || T.accent} />
+              <Clock show={animated} text={c.text} before={c.before} label={r.name} color={r.color || T.accent} fromLeft={isLeft(cfg.corner)} />
             </div>
           );
         })}

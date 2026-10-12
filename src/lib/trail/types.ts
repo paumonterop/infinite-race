@@ -1,3 +1,4 @@
+import type { LayoutCfg, LayoutKey } from "./layout";
 import type { Other } from "./others";
 import type { Program } from "./scenes";
 
@@ -72,6 +73,8 @@ export interface TrailEvent {
   flag?: string; // bandera de les escenes (fitxer a /public/flags)
   program?: Program;
   others?: Other[];
+  /** Posició i mida de les escenes petites (cronòmetres, etiqueta de posició). */
+  layout?: Partial<Record<LayoutKey, LayoutCfg>>;
   /** Lectura de vMix per triar automàticament la motxilla en programa. input_map: motxilla -> número d'input. */
   vmix?: { ip: string; port: number; input_map: Record<string, number> };
   livetrail: {

@@ -3,7 +3,7 @@
  * zona no poden coexistir (la nova substitueix l'anterior), les de zones diferents sí (p. ex. classificació + cronòmetre
  * + dials de motxilla), com feia l'autopilot de gfx-suite-onon.
  */
-export type Slot = "main" | "lower" | "chrono" | "tag" | "gauge_speed" | "gauge_gradient";
+export type Slot = "main" | "lower" | "chrono" | "tag" | "mini" | "gauge_speed" | "gauge_gradient";
 
 export type Need = "race" | "sex" | "bib" | "segment" | "device" | "point" | "other" | "position";
 
@@ -20,6 +20,8 @@ export type SceneId =
   | "chyron_other"
   | "leaderboard"
   | "position_tag"
+  | "leaderboard_mini"
+  | "race_stats"
   | "favorites"
   | "history_record"
   | "history_winners"
@@ -52,6 +54,8 @@ export const SCENES: SceneDef[] = [
   { id: "chyron_other", label: "Chyron d'altres", desc: "Nom i càrrec d'una persona externa (comentarista, convidat…).", group: "Altres", slot: "lower", needs: ["other"] },
   { id: "leaderboard", label: "Classificació", desc: "Top 10 d'homes o dones en directe.", group: "Classificacions", slot: "main", needs: ["race", "sex"] },
   { id: "position_tag", label: "Posició (1r–5è)", desc: "Etiqueta «1r HOME · cursa» amb qui hi és ara.", group: "Classificacions", slot: "tag", needs: ["race", "sex", "position"] },
+  { id: "leaderboard_mini", label: "Classificació petita (top 5)", desc: "Top 5 en un racó de la pantalla (baix a la dreta).", group: "Classificacions", slot: "mini", needs: ["race", "sex"] },
+  { id: "race_stats", label: "Estadístiques de la cursa", desc: "Inscrits, en cursa, arribats i quants han passat per cada control.", group: "Estadístiques", slot: "main", needs: ["race"] },
   { id: "favorites", label: "Top 10 favorits", desc: "Els millors de les edicions anteriors.", group: "Classificacions", slot: "main", needs: ["race", "sex"] },
   { id: "history_record", label: "Rècord de la cursa", desc: "Rècord d'homes i dones amb l'any.", group: "Històric", slot: "main", needs: ["race"] },
   { id: "history_winners", label: "Guanyadors per edició", desc: "Qui va guanyar cada any.", group: "Històric", slot: "main", needs: ["race"] },

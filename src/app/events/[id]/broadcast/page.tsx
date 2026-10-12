@@ -11,7 +11,8 @@ const SLOT_LABEL: Record<Slot, string> = {
   main: "Centre",
   lower: "Inferior",
   chrono: "Cronòmetre",
-  tag: "Etiqueta dreta",
+  tag: "Etiqueta",
+  mini: "Classif. petita",
   gauge_speed: "Velocitat",
   gauge_gradient: "Pendent",
 };
@@ -229,7 +230,7 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
               <Row label="DORSAL">
                 <div className="relative flex items-center gap-1">
                   <input
-                    value={bib === "auto" ? "AUTO (vMix)" : bib ? `#${bib}` : q}
+                    value={bib ? `#${bib}` : q}
                     onChange={(e) => {
                       setBib("");
                       setQ(e.target.value.replace(/^#/, ""));
@@ -237,16 +238,6 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
                     placeholder="Dorsal o nom…"
                     className={`${inp} w-48`}
                   />
-                  <button
-                    onClick={() => {
-                      setBib("auto");
-                      setQ("");
-                    }}
-                    className={`rounded-md border px-2 py-1 text-xs font-bold ${bib === "auto" ? "border-sky-500/60 bg-sky-500/10" : "border-white/10 hover:bg-white/5"}`}
-                    title="Segueix la motxilla que vMix té en programa"
-                  >
-                    🎥 Automàtic
-                  </button>
                   {matches.length > 0 && !bib && (
                     <div className="absolute bottom-full z-20 mb-1 w-72 rounded-lg border border-white/10 bg-[#0b0f14] shadow-xl">
                       {matches.map((r: any) => (

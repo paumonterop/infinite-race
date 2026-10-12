@@ -4,6 +4,7 @@ import TrailNav from "@/components/trail/TrailNav";
 import { useLive } from "@/lib/client/useLive";
 import { fmtDate } from "@/lib/client/format";
 import { KNOWN_DEVICE_IDS, defaultLabel } from "@/lib/trail/devices";
+import { CORNER_LABEL, Corner, DEFAULT_LAYOUT, LAYOUT_LABEL, LayoutCfg, LayoutKey, layoutOf } from "@/lib/trail/layout";
 import type { GpsPosition } from "@/lib/trail/types";
 import type { VmixStatus } from "@/lib/trail/vmix";
 
@@ -18,6 +19,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
   const [vport, setVport] = useState("8099");
   const [vmap, setVmap] = useState<Record<string, string>>({});
   const [vtest, setVtest] = useState<string | null>(null);
+  const [layout, setLayout] = useState<Record<LayoutKey, LayoutCfg>>(DEFAULT_LAYOUT);
   const { data: gps } = useLive<GpsPosition[]>(`/api/trail/events/${id}/gps`, [], 5000);
   const { data: vstat } = useLive<VmixStatus>(`/api/trail/events/${id}/vmix`, [], 2000);
 
@@ -26,6 +28,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
     setName((n) => n || ev.name);
     setFlag((f) => (ev.flag ? ev.flag : f));
     setColors((c) => (Object.keys(c).length ? c : Object.fromEntries(ev.races.map((r: any) => [r.id, r.color]))));
+    setLayout({ chrono: layoutOf(ev, "chrono"), tag: layoutOf(ev, "tag"), mini: layoutOf(ev, "mini") });
     setVip((v) => v || ev.vmix?.ip || "");
     setVport((v) => (ev.vmix?.port ? String(ev.vmix.port) : v));
     setVmap((m) => (Object.keys(m).length ? m : Object.fromEntries(Object.entries(ev.vmix?.input_map ?? {}).map(([k, n]) => [k, String(n)]))));
@@ -41,6 +44,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
         flag,
         races: Object.entries(colors).map(([rid, color]) => ({ id: rid, color })),
         vmix: { ip: vip, port: vport, input_map: vmap },
+        layout,
       }),
     });
     setMsg(res.ok ? "Desat ✓" : "⚠ Error en desar");
@@ -112,9 +116,49 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
         </section>
 
         <section className="rounded-2xl border border-white/10 p-5">
+          <h2 className="mb-1 text-xs font-bold tracking-widest text-slate-400">POSICIÓ I MIDA DE LES ESCENES PETITES</h2>
+          <p className="mb-3 text-xs text-slate-500">Tria a quina cantonada de la pantalla surt cada escena i com de gran (50–150 %). Es desa amb «Desar» i s&apos;aplica a la sortida de programa.</p>
+          <div className="grid gap-3 md:grid-cols-3">
+            {(Object.keys(DEFAULT_LAYOUT) as LayoutKey[]).map((k) => (
+              <div key={k} className="rounded-xl bg-white/[0.03] p-3">
+                <div className="mb-2 text-sm font-bold">{LAYOUT_LABEL[k]}</div>
+                <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-md border border-white/10 bg-[#0b0f14]">
+                  {(["tl", "tr", "bl", "br"] as Corner[]).map((c) => (
+                    <button
+                      key={c}
+                      title={CORNER_LABEL[c]}
+                      onClick={() => setLayout((l) => ({ ...l, [k]: { ...l[k], corner: c } }))}
+                      className={`absolute h-[26%] w-[34%] rounded border text-[10px] font-bold ${c[0] === "t" ? "top-1.5" : "bottom-1.5"} ${c[1] === "l" ? "left-1.5" : "right-1.5"} ${
+                        layout[k].corner === c ? "border-sky-400 bg-sky-500/40 text-white" : "border-white/15 bg-white/5 text-slate-500 hover:bg-white/10"
+                      }`}
+                    >
+                      {layout[k].corner === c ? "●" : ""}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span className="w-10">Mida</span>
+                  <input
+                    type="range"
+                    min={50}
+                    max={150}
+                    step={5}
+                    value={Math.round(layout[k].scale * 100)}
+                    onChange={(e) => setLayout((l) => ({ ...l, [k]: { ...l[k], scale: parseInt(e.target.value, 10) / 100 } }))}
+                    className="flex-1"
+                  />
+                  <span className="w-10 text-right font-mono text-slate-300">{Math.round(layout[k].scale * 100)}%</span>
+                </div>
+                <div className="mt-1 text-[11px] text-slate-500">{CORNER_LABEL[layout[k].corner]}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 p-5">
           <h2 className="mb-1 text-xs font-bold tracking-widest text-slate-400">vMIX (MOTXILLA AUTOMÀTICA)</h2>
           <p className="mb-3 text-xs text-slate-500">
-            El servidor llegeix quin input té vMix en programa i les escenes amb «Automàtic» (dials de velocitat/pendent i chyron de corredor) segueixen aquella motxilla.
+            El servidor llegeix quin input té vMix en programa i els dials de velocitat i de pendent amb «Automàtic» segueixen aquella motxilla (el chyron i la fitxa de corredor es trien sempre a mà).
             Les entrades que no són una motxilla (anuncis, càmeres…) simplement no mostren res.
           </p>
           <div className="mb-3 flex flex-wrap items-end gap-3">

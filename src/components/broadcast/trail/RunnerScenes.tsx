@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLive } from "@/lib/client/useLive";
 import type { HistResult } from "@/lib/trail/history";
-import type { VmixStatus } from "@/lib/trail/vmix";
 import { SceneProps, TR_KEYFRAMES, raceOf } from "./RaceScenes";
 import { Avatar, Pill, STAGE, T, fmtHMS, sexColor, useFitWidth, useSceneAnim } from "./ui";
 
@@ -27,12 +26,8 @@ interface RunnerData {
 
 const STATUS_CA: Record<string, string> = { REGISTERED: "INSCRIT", RUNNING: "EN CURSA", FINISHED: "ARRIBAT", DNF: "RETIRAT", DNS: "NO SORTIT" };
 
-/** Dorsal de l'escena: el triat o, amb "auto", el de la motxilla que vMix té ara en programa. */
-function useBib(eventId: string, bib: string | undefined) {
-  const auto = bib === "auto";
-  const { data: vm } = useLive<VmixStatus>(auto ? `/api/trail/events/${eventId}/vmix` : "", [], 1000);
-  return auto ? (vm && !(vm as any).error ? vm.bib ?? undefined : undefined) : bib;
-}
+/** El chyron i la fitxa sempre porten un dorsal triat a mà (no hi ha mode automàtic). */
+const useBib = (_eventId: string, bib: string | undefined) => (bib === "auto" ? undefined : bib);
 
 function useRunner(eventId: string, raceId: string | undefined, bib: string | undefined, history: boolean) {
   const { data } = useLive<RunnerData>(

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { emitUpdate } from "@/lib/io";
+import { DEFAULT_LAYOUT, LayoutKey, layoutOf } from "@/lib/trail/layout";
 import { getEvent, persistTrail, trailStore } from "@/lib/trail/store";
 import { eventView } from "@/lib/trail/view";
 
@@ -17,6 +18,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const b = await req.json().catch(() => ({}));
   if (typeof b.name === "string" && b.name.trim()) ev.name = b.name.trim();
   if (typeof b.flag === "string") ev.flag = b.flag.replace(/[^a-z0-9-]/gi, "") || undefined;
+  if (b.layout && typeof b.layout === "object") {
+    const next: any = { ...(ev.layout ?? {}) };
+    for (const k of Object.keys(DEFAULT_LAYOUT) as LayoutKey[]) {
+      if (b.layout[k]) next[k] = layoutOf({ layout: { [k]: b.layout[k] } }, k); // valida cantonada i mida
+    }
+    ev.layout = next;
+  }
   if (b.vmix && typeof b.vmix === "object") {
     const map: Record<string, number> = {};
     for (const [k, v] of Object.entries(b.vmix.input_map ?? {})) {
