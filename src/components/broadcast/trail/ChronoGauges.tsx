@@ -75,7 +75,6 @@ function Clock({ show, text, label, color, before }: { show: boolean; text: stri
       <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 22px", minWidth: 200 }}>
         {label ? <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, color: T.muted, textTransform: "uppercase", lineHeight: 1 }}>{before ? `${label} · SORTIDA EN` : label}</span> : null}
         <span style={{ fontSize: 40, fontWeight: 900, color: before ? T.amber : T.white, letterSpacing: 1, fontVariantNumeric: "tabular-nums", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-          {before ? "-" : ""}
           {text}
         </span>
       </div>

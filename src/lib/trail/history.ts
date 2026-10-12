@@ -130,8 +130,15 @@ async function build(ev: TrailEvent, race: TrailRace): Promise<RaceHistory> {
  * Rècords (home i dona) entre les edicions de recorregut semblant (±20 % de distància: el traçat canvia cada any).
  * Es calculen en llegir, així el criteri es pot canviar sense tornar a descarregar res.
  */
-export function computeRecords(h: RaceHistory, distM: number | null, tol = 0.2) {
-  const ok = new Set(h.editions.filter((e) => !distM || Math.abs(e.distance_m - distM) / distM <= tol).map((e) => e.year));
+export function computeRecords(h: RaceHistory, distM: number | null) {
+  // Només les edicions de recorregut més semblant: la més propera en distància i les que hi són a ≤3 punts (mínim ±8 %).
+  let ok: Set<number>;
+  if (!distM) ok = new Set(h.editions.map((e) => e.year));
+  else {
+    const gaps = h.editions.map((e) => ({ year: e.year, gap: Math.abs(e.distance_m - distM) / distM }));
+    const best = Math.min(...gaps.map((g) => g.gap), 1);
+    ok = new Set(gaps.filter((g) => g.gap <= Math.max(best + 0.03, 0.08)).map((g) => g.year));
+  }
   const rec = (sex: "M" | "F") => h.results.filter((r) => r.sex === sex && ok.has(r.year)).sort((a, b) => a.time_s - b.time_s)[0] ?? null;
   const withKm = (r: HistResult | null) => (r ? { ...r, distance_m: h.editions.find((e) => e.year === r.year)?.distance_m ?? null } : null);
   return { record_m: withKm(rec("M")), record_f: withKm(rec("F")) };

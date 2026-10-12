@@ -97,7 +97,7 @@ export function HistoryRecordScene({ eventId, ev, layer, isLive }: SceneProps) {
           accent={sexColor(sex)}
         />
       ))}
-      <ListFooter text="Millor temps de les edicions de recorregut semblant" />
+      <ListFooter text={(() => { const d = data.record_m?.distance_m ?? data.record_f?.distance_m; return d ? `Edició de recorregut més semblant: ${Math.round(d / 1000)} km` : "Sense edicions anteriors comparables"; })()} />
     </ListPanel>
   );
 }
