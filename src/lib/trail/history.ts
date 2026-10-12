@@ -126,6 +126,17 @@ async function build(ev: TrailEvent, race: TrailRace): Promise<RaceHistory> {
   return { fetched_at: new Date().toISOString(), editions, results, record_m: recOf("M"), record_f: recOf("F") };
 }
 
+/**
+ * Rècords (home i dona) entre les edicions de recorregut semblant (±20 % de distància: el traçat canvia cada any).
+ * Es calculen en llegir, així el criteri es pot canviar sense tornar a descarregar res.
+ */
+export function computeRecords(h: RaceHistory, distM: number | null, tol = 0.2) {
+  const ok = new Set(h.editions.filter((e) => !distM || Math.abs(e.distance_m - distM) / distM <= tol).map((e) => e.year));
+  const rec = (sex: "M" | "F") => h.results.filter((r) => r.sex === sex && ok.has(r.year)).sort((a, b) => a.time_s - b.time_s)[0] ?? null;
+  const withKm = (r: HistResult | null) => (r ? { ...r, distance_m: h.editions.find((e) => e.year === r.year)?.distance_m ?? null } : null);
+  return { record_m: withKm(rec("M")), record_f: withKm(rec("F")) };
+}
+
 export function getHistory(ev: TrailEvent, race: TrailRace): Promise<RaceHistory> {
   const key = `${ev.livetrail.tenant}__${race.id}`;
   const m = mem.get(key);

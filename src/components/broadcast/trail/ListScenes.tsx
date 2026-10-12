@@ -65,7 +65,7 @@ export function FavoritesScene({ eventId, ev, layer, isLive }: SceneProps) {
 }
 
 function useHistory(eventId: string, raceId: string | undefined) {
-  return useLive<{ editions: HistEdition[]; record_m: HistResult | null; record_f: HistResult | null }>(
+  return useLive<{ editions: HistEdition[]; record_m: (HistResult & { distance_m: number | null }) | null; record_f: (HistResult & { distance_m: number | null }) | null }>(
     `/api/trail/events/${eventId}/history?race=${raceId ?? ""}`,
     [],
     10 * 60_000
@@ -90,14 +90,14 @@ export function HistoryRecordScene({ eventId, ev, layer, isLive }: SceneProps) {
       {rec.map(({ sex, r }, i) => (
         <RankRow
           key={sex}
-          r={{ rank: r?.year ?? "—", name: r?.name ?? "Sense dades", club: SEX_LABEL[sex], diff: r ? fmtHMS(r.time_s) : "" }}
+          r={{ rank: r?.year ?? "—", name: r?.name ?? "Sense dades", club: r?.distance_m ? `${SEX_LABEL[sex]} · ${Math.round(r.distance_m / 1000)} KM` : SEX_LABEL[sex], diff: r ? fmtHMS(r.time_s) : "" }}
           index={i}
           total={2}
           animated={animated}
           accent={sexColor(sex)}
         />
       ))}
-      <ListFooter text="Edicions de recorregut comparable" />
+      <ListFooter text="Millor temps de les edicions de recorregut semblant" />
     </ListPanel>
   );
 }
