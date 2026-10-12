@@ -5,6 +5,7 @@ import { checkpointSegments } from "@/components/broadcast/trail/RaceScenes";
 import { useLive } from "@/lib/client/useLive";
 import type { Analysis } from "@/lib/trail/analysis";
 import { Layer, Program, SCENES, SCENE_BY_ID, SceneId, Slot } from "@/lib/trail/scenes";
+import { previewBgOf, previewBgStyle } from "@/lib/trail/previewBg";
 import type { GpsPosition } from "@/lib/trail/types";
 
 const SLOT_LABEL: Record<Slot, string> = {
@@ -101,7 +102,7 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
     (!def.needs.includes("segment") || parseFloat(to) > parseFloat(from));
 
   const previewUrl = useMemo(() => {
-    const u = new URLSearchParams({ scene: layer.scene, transparent: "0" });
+    const u = new URLSearchParams({ scene: layer.scene, transparent: "1" });
     if (layer.race_id) u.set("race", layer.race_id);
     if (layer.sex) u.set("sex", layer.sex);
     if (layer.bib) u.set("bib", layer.bib);
@@ -146,6 +147,7 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
 
   const active = (Object.entries(prog?.layers ?? {}) as [Slot, Layer][]).filter(([, l]) => !!l);
   const onAir = active.length > 0 || !!prog?.ticker;
+  const bgStyle = previewBgStyle(previewBgOf(ev));
   const inp = "rounded-md border border-white/10 bg-[#0b0f14] px-2 py-1 text-sm";
 
   return (
@@ -192,7 +194,7 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
               ↻ Repeteix
             </button>
           </div>
-          <div className="relative w-full shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#1b2230]" style={{ aspectRatio: "16 / 9" }}>
+          <div className="relative w-full shrink-0 overflow-hidden rounded-xl border border-white/10" style={{ aspectRatio: "16 / 9", ...bgStyle }}>
             {race && ready && <iframe key={previewKey + previewUrl} src={previewUrl} className="absolute inset-0 h-full w-full border-0" title="preview" />}
             {!ready && <div className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-slate-500">Completa els paràmetres per veure la previsualització</div>}
           </div>
@@ -345,8 +347,8 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
               URLs vMix / OBS
             </button>
           </div>
-          <div className="relative w-full shrink-0 overflow-hidden rounded-xl border border-red-500/40 bg-[#1b2230]" style={{ aspectRatio: "16 / 9" }}>
-            <iframe key={programKey} src={`/broadcast/trail/${id}?transparent=0`} className="absolute inset-0 h-full w-full border-0" title="programa" />
+          <div className="relative w-full shrink-0 overflow-hidden rounded-xl border border-red-500/40" style={{ aspectRatio: "16 / 9", ...bgStyle }}>
+            <iframe key={programKey} src={`/broadcast/trail/${id}?transparent=1`} className="absolute inset-0 h-full w-full border-0" title="programa" />
             {showUrls && (
               <div className="absolute inset-0 z-10 overflow-y-auto bg-[#0b0f14]/97 p-3">
                 <div className="mb-2 flex items-center">

@@ -4,6 +4,7 @@ import TrailNav from "@/components/trail/TrailNav";
 import { useLive } from "@/lib/client/useLive";
 import { fmtDate } from "@/lib/client/format";
 import { KNOWN_DEVICE_IDS, defaultLabel } from "@/lib/trail/devices";
+import { DEFAULT_PREVIEW_BG, GREEN, PREVIEW_BG_LABEL, PreviewBg, PreviewBgMode, previewBgOf, previewBgStyle } from "@/lib/trail/previewBg";
 import { CORNER_LABEL, Corner, DEFAULT_LAYOUT, LAYOUT_LABEL, LayoutCfg, LayoutKey, layoutOf } from "@/lib/trail/layout";
 import type { GpsPosition } from "@/lib/trail/types";
 import type { VmixStatus } from "@/lib/trail/vmix";
@@ -20,6 +21,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
   const [vmap, setVmap] = useState<Record<string, string>>({});
   const [vtest, setVtest] = useState<string | null>(null);
   const [layout, setLayout] = useState<Record<LayoutKey, LayoutCfg>>(DEFAULT_LAYOUT);
+  const [pbg, setPbg] = useState<PreviewBg>(DEFAULT_PREVIEW_BG);
   const { data: gps } = useLive<GpsPosition[]>(`/api/trail/events/${id}/gps`, [], 5000);
   const { data: vstat } = useLive<VmixStatus>(`/api/trail/events/${id}/vmix`, [], 2000);
 
@@ -29,6 +31,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
     setFlag((f) => (ev.flag ? ev.flag : f));
     setColors((c) => (Object.keys(c).length ? c : Object.fromEntries(ev.races.map((r: any) => [r.id, r.color]))));
     setLayout({ chrono: layoutOf(ev, "chrono"), tag: layoutOf(ev, "tag"), mini: layoutOf(ev, "mini") });
+    setPbg(previewBgOf(ev));
     setVip((v) => v || ev.vmix?.ip || "");
     setVport((v) => (ev.vmix?.port ? String(ev.vmix.port) : v));
     setVmap((m) => (Object.keys(m).length ? m : Object.fromEntries(Object.entries(ev.vmix?.input_map ?? {}).map(([k, n]) => [k, String(n)]))));
@@ -45,6 +48,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
         races: Object.entries(colors).map(([rid, color]) => ({ id: rid, color })),
         vmix: { ip: vip, port: vport, input_map: vmap },
         layout,
+        preview_bg: pbg,
       }),
     });
     setMsg(res.ok ? "Desat ✓" : "⚠ Error en desar");
@@ -113,6 +117,37 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
             Última sincronització: {fmtDate(ev.livetrail.last_sync)} · inscrits: {fmtDate(ev.livetrail.last_registrants)}
           </p>
           {ev.livetrail.last_error && <p className="mt-1 text-xs font-semibold text-red-400">⚠ {ev.livetrail.last_error}</p>}
+        </section>
+
+        <section className="rounded-2xl border border-white/10 p-5">
+          <h2 className="mb-1 text-xs font-bold tracking-widest text-slate-400">FONS DE LA PREVISUALITZACIÓ</h2>
+          <p className="mb-3 text-xs text-slate-500">
+            El que es veu darrere de les escenes a la consola de Broadcast (previsualització i programa). La sortida real per a vMix/OBS sempre és transparent.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {(Object.keys(PREVIEW_BG_LABEL) as PreviewBgMode[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setPbg((b) => ({ ...b, mode: m }))}
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold ${pbg.mode === m ? "border-sky-500/60 bg-sky-500/10" : "border-white/10 hover:bg-white/5"}`}
+              >
+                <span className="h-5 w-8 rounded border border-white/20" style={previewBgStyle({ mode: m, color: pbg.color })} />
+                {PREVIEW_BG_LABEL[m]}
+              </button>
+            ))}
+            {pbg.mode === "color" && (
+              <label className="flex items-center gap-2 text-sm text-slate-300">
+                <input type="color" value={pbg.color} onChange={(e) => setPbg((b) => ({ ...b, color: e.target.value }))} className="h-9 w-12 cursor-pointer rounded border-0 bg-transparent" />
+                <span className="font-mono text-xs text-slate-400">{pbg.color}</span>
+                <button onClick={() => setPbg((b) => ({ ...b, color: GREEN }))} className="rounded bg-white/10 px-2 py-0.5 text-xs font-bold hover:bg-white/20">
+                  verd croma
+                </button>
+              </label>
+            )}
+          </div>
+          <div className="mt-3 aspect-video w-72 overflow-hidden rounded-lg border border-white/10" style={previewBgStyle(pbg)}>
+            <div className="m-3 inline-block rounded-md bg-[#0b0f14] px-3 py-1.5 text-sm font-black">Exemple d&apos;escena</div>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-white/10 p-5">

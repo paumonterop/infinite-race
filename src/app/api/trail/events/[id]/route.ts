@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { emitUpdate } from "@/lib/io";
 import { DEFAULT_LAYOUT, LayoutKey, layoutOf } from "@/lib/trail/layout";
+import { previewBgOf } from "@/lib/trail/previewBg";
 import { getEvent, persistTrail, trailStore } from "@/lib/trail/store";
 import { eventView } from "@/lib/trail/view";
 
@@ -25,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     ev.layout = next;
   }
+  if (b.preview_bg && typeof b.preview_bg === "object") ev.preview_bg = previewBgOf({ preview_bg: b.preview_bg });
   if (b.vmix && typeof b.vmix === "object") {
     const map: Record<string, number> = {};
     for (const [k, v] of Object.entries(b.vmix.input_map ?? {})) {
