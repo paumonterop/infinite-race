@@ -347,7 +347,7 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
               URLs vMix / OBS
             </button>
           </div>
-          <div className="relative w-full shrink-0 overflow-hidden rounded-xl border border-red-500/40" style={{ aspectRatio: "16 / 9", ...bgStyle }}>
+          <div className="relative w-full shrink-0 overflow-hidden rounded-xl border border-red-500/40 bg-[#1b2230]" style={{ aspectRatio: "16 / 9" }}>
             <iframe key={programKey} src={`/broadcast/trail/${id}?transparent=1`} className="absolute inset-0 h-full w-full border-0" title="programa" />
             {showUrls && (
               <div className="absolute inset-0 z-10 overflow-y-auto bg-[#0b0f14]/97 p-3">
