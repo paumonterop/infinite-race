@@ -34,6 +34,7 @@ export default function BroadcastFrame({ children }: { children: React.ReactNode
         style={{
           width: 1920,
           height: 1080,
+          flexShrink: 0, // sense això el llenç s'encongeix dins el flex i l'escalat el descentra
           transform: `scale(${scale})`,
           transformOrigin: "center center",
           position: "relative",
