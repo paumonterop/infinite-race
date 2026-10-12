@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BRAND } from "@/lib/brand";
 import { SPORTS } from "@/lib/sports";
 import { useLive } from "@/lib/client/useLive";
+import { fmtStart } from "@/lib/client/format";
 
 interface EventSummary {
   id: string;
@@ -12,11 +13,6 @@ interface EventSummary {
   last_sync: string | null;
   last_error: string | null;
   races: { id: string; name: string; color: string; start_iso: string | null; status: string; runners: number; has_gpx: boolean }[];
-}
-
-function fmtStart(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("ca-ES", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 const BACKYARD_STATUS: Record<string, string> = {
