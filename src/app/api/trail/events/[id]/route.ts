@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (b.layout && typeof b.layout === "object") {
     const next: any = { ...(ev.layout ?? {}) };
     for (const k of Object.keys(DEFAULT_LAYOUT) as LayoutKey[]) {
-      if (b.layout[k]) next[k] = layoutOf({ layout: { [k]: b.layout[k] } }, k); // valida cantonada i mida
+      if (b.layout[k]) next[k] = layoutOf({ layout: { [k]: b.layout[k] } }, k); // valida cantonada, mida i marges X/Y
     }
     ev.layout = next;
   }

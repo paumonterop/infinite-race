@@ -47,7 +47,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
         flag,
         races: Object.entries(colors).map(([rid, color]) => ({ id: rid, color })),
         vmix: { ip: vip, port: vport, input_map: vmap },
-        layout,
+        layout: { chrono: layout.chrono },
         preview_bg: pbg,
       }),
     });
@@ -151,42 +151,77 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
         </section>
 
         <section className="rounded-2xl border border-white/10 p-5">
-          <h2 className="mb-1 text-xs font-bold tracking-widest text-slate-400">POSICIÓ I MIDA DE LES ESCENES PETITES</h2>
-          <p className="mb-3 text-xs text-slate-500">Tria a quina cantonada de la pantalla surt cada escena i com de gran (50–150 %). Es desa amb «Desar» i s&apos;aplica a la sortida de programa.</p>
-          <div className="grid gap-3 md:grid-cols-3">
-            {(Object.keys(DEFAULT_LAYOUT) as LayoutKey[]).map((k) => (
-              <div key={k} className="rounded-xl bg-white/[0.03] p-3">
-                <div className="mb-2 text-sm font-bold">{LAYOUT_LABEL[k]}</div>
-                <div className="relative mb-3 aspect-video w-full overflow-hidden rounded-md border border-white/10 bg-[#0b0f14]">
-                  {(["tl", "tr", "bl", "br"] as Corner[]).map((c) => (
-                    <button
-                      key={c}
-                      title={CORNER_LABEL[c]}
-                      onClick={() => setLayout((l) => ({ ...l, [k]: { ...l[k], corner: c } }))}
-                      className={`absolute h-[26%] w-[34%] rounded border text-[10px] font-bold ${c[0] === "t" ? "top-1.5" : "bottom-1.5"} ${c[1] === "l" ? "left-1.5" : "right-1.5"} ${
-                        layout[k].corner === c ? "border-sky-400 bg-sky-500/40 text-white" : "border-white/15 bg-white/5 text-slate-500 hover:bg-white/10"
-                      }`}
-                    >
-                      {layout[k].corner === c ? "●" : ""}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <span className="w-10">Mida</span>
-                  <input
-                    type="range"
-                    min={50}
-                    max={150}
-                    step={5}
-                    value={Math.round(layout[k].scale * 100)}
-                    onChange={(e) => setLayout((l) => ({ ...l, [k]: { ...l[k], scale: parseInt(e.target.value, 10) / 100 } }))}
-                    className="flex-1"
-                  />
-                  <span className="w-10 text-right font-mono text-slate-300">{Math.round(layout[k].scale * 100)}%</span>
-                </div>
-                <div className="mt-1 text-[11px] text-slate-500">{CORNER_LABEL[layout[k].corner]}</div>
-              </div>
-            ))}
+          <h2 className="mb-1 text-xs font-bold tracking-widest text-slate-400">POSICIÓ DEL CRONÒMETRE</h2>
+          <p className="mb-3 text-xs text-slate-500">
+            Per defecte a dalt a la dreta. Tria la cantonada de referència i els marges X (des del costat) i Y (des de dalt/baix) en píxels sobre una pantalla de 1920×1080. Es desa amb «Desar».
+          </p>
+          <div className="flex flex-wrap items-start gap-6">
+            <div className="relative aspect-video w-64 shrink-0 overflow-hidden rounded-md border border-white/10 bg-[#0b0f14]">
+              {(["tl", "tr", "bl", "br"] as Corner[]).map((c) => (
+                <button
+                  key={c}
+                  title={CORNER_LABEL[c]}
+                  onClick={() => setLayout((l) => ({ ...l, chrono: { ...l.chrono, corner: c } }))}
+                  className={`absolute h-[18%] w-[26%] rounded border text-[10px] font-bold ${c[0] === "t" ? "top-1" : "bottom-1"} ${c[1] === "l" ? "left-1" : "right-1"} ${
+                    layout.chrono.corner === c ? "border-sky-400 bg-sky-500/40 text-white" : "border-white/15 bg-white/5 text-slate-500 hover:bg-white/10"
+                  }`}
+                >
+                  {layout.chrono.corner === c ? "●" : ""}
+                </button>
+              ))}
+              <div
+                className="pointer-events-none absolute rounded-sm bg-amber-400/80"
+                style={{
+                  width: "18%",
+                  height: "9%",
+                  [layout.chrono.corner[0] === "t" ? "top" : "bottom"]: `${((layout.chrono.y ?? (layout.chrono.corner[0] === "t" ? 40 : 48)) / 1080) * 100}%`,
+                  [layout.chrono.corner[1] === "l" ? "left" : "right"]: `${((layout.chrono.x ?? 48) / 1920) * 100}%`,
+                }}
+                title="Posició aproximada del cronòmetre"
+              />
+            </div>
+            <div className="grid gap-3 text-sm">
+              <label className="flex items-center gap-3">
+                <span className="w-28 text-xs font-bold tracking-widest text-slate-400">X (px)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={1920}
+                  value={layout.chrono.x ?? 48}
+                  onChange={(e) => setLayout((l) => ({ ...l, chrono: { ...l.chrono, x: Math.max(0, Math.min(1920, parseInt(e.target.value || "0", 10))) } }))}
+                  className="w-28 rounded-md border border-white/10 bg-[#0b0f14] px-2 py-1"
+                />
+                <span className="text-xs text-slate-500">des del costat {layout.chrono.corner[1] === "l" ? "esquerre" : "dret"}</span>
+              </label>
+              <label className="flex items-center gap-3">
+                <span className="w-28 text-xs font-bold tracking-widest text-slate-400">Y (px)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={1080}
+                  value={layout.chrono.y ?? (layout.chrono.corner[0] === "t" ? 40 : 48)}
+                  onChange={(e) => setLayout((l) => ({ ...l, chrono: { ...l.chrono, y: Math.max(0, Math.min(1080, parseInt(e.target.value || "0", 10))) } }))}
+                  className="w-28 rounded-md border border-white/10 bg-[#0b0f14] px-2 py-1"
+                />
+                <span className="text-xs text-slate-500">des de {layout.chrono.corner[0] === "t" ? "dalt" : "baix"}</span>
+              </label>
+              <label className="flex items-center gap-3">
+                <span className="w-28 text-xs font-bold tracking-widest text-slate-400">MIDA</span>
+                <input
+                  type="range"
+                  min={50}
+                  max={150}
+                  step={5}
+                  value={Math.round(layout.chrono.scale * 100)}
+                  onChange={(e) => setLayout((l) => ({ ...l, chrono: { ...l.chrono, scale: parseInt(e.target.value, 10) / 100 } }))}
+                  className="w-40"
+                />
+                <span className="w-12 font-mono text-slate-300">{Math.round(layout.chrono.scale * 100)}%</span>
+              </label>
+              <button onClick={() => setLayout((l) => ({ ...l, chrono: { ...DEFAULT_LAYOUT.chrono } }))} className="w-fit rounded-md bg-white/10 px-3 py-1 text-xs font-bold hover:bg-white/20">
+                Restableix (dalt a la dreta)
+              </button>
+            </div>
           </div>
         </section>
 
