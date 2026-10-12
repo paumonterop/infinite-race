@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TrailNav from "@/components/trail/TrailNav";
 import { useLive } from "@/lib/client/useLive";
 import type { Program, SceneId } from "@/lib/trail/types";
@@ -31,7 +31,8 @@ export default function BroadcastPage({ params }: { params: { id: string } }) {
     refetch();
   }
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
   const previewUrl = `/broadcast/trail/${id}/presentation?race=${rid}${scene === "presentation_profile" ? "&profile=1" : ""}&flag=${ev?.flag ?? "es-ct"}`;
 
   const urls = [
