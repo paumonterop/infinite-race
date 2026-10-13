@@ -2,6 +2,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useRef } from "react";
+import type { Leader } from "@/lib/trail/estimate";
 import type { GpsPosition } from "@/lib/trail/types";
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
   focus: string | null; // "<deviceId>:<timestamp>" per forçar re-centrat sobre una motxilla
   focusRaceId?: string | null; // cursa seleccionada a les pestanyes del perfil: es ressalta i s'hi centra el mapa
   hoverPoint?: [number, number] | null; // punt del perfil sota el ratolí
+  leaders?: Record<string, Leader[]>; // primers de cada cursa (posició estimada)
 }
 
 function markerIcon(label: string, color: string, online: boolean, off: boolean) {
@@ -27,12 +29,25 @@ function markerIcon(label: string, color: string, online: boolean, off: boolean)
   });
 }
 
-export default function TrailMap({ races, devices, hidden, focus, focusRaceId, hoverPoint }: Props) {
+function leaderIcon(rank: number, color: string, estimated: boolean) {
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:26px;height:26px;border-radius:50%;background:${color};border:${estimated ? "2px dashed" : "3px solid"} #fff;color:#0b0f14;font:900 13px system-ui;display:flex;align-items:center;justify-content:center;box-shadow:0 0 7px rgba(0,0,0,.75)">${rank}</div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+}
+
+const ord = (n: number) => (n === 1 ? "1r" : n === 2 ? "2n" : n === 3 ? "3r" : n === 4 ? "4t" : `${n}è`);
+const hhmm = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString("ca-ES", { hour: "2-digit", minute: "2-digit" }) : "");
+
+export default function TrailMap({ races, devices, hidden, focus, focusRaceId, hoverPoint, leaders }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const trackLayer = useRef<L.LayerGroup | null>(null);
   const markers = useRef<Record<string, L.Marker>>({});
   const hoverMarker = useRef<L.CircleMarker | null>(null);
+  const leaderMarkers = useRef<Record<string, L.Marker>>({});
   const fitted = useRef(false);
   const lastTrackKey = useRef("");
   const lastFocusRace = useRef<string | null>(null);
@@ -54,6 +69,7 @@ export default function TrailMap({ races, devices, hidden, focus, focusRaceId, h
       m.remove();
       map.current = null;
       markers.current = {};
+      leaderMarkers.current = {};
       hoverMarker.current = null;
     };
   }, []);
@@ -117,6 +133,41 @@ export default function TrailMap({ races, devices, hidden, focus, focusRaceId, h
       hoverMarker.current.setStyle({ fillColor: color });
     }
   }, [hoverPoint, races, focusRaceId]);
+
+  // Primers de cada cursa (posició estimada): cercle amb la posició; vora discontínua = estimat entre controls
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const seen = new Set<string>();
+    for (const [raceId, list] of Object.entries(leaders ?? {})) {
+      const race = races.find((r) => r.id === raceId);
+      if (!race || hidden[raceId]) continue;
+      for (const l of list) {
+        const key = `${raceId}:${l.bib}`;
+        seen.add(key);
+        const tip =
+          `<b>${ord(l.rank)} · #${l.bib} ${l.name}</b><br>${race.name}<br>km ${l.km.toFixed(1)}${l.estimated ? " (estimat)" : ""}` +
+          (l.next_point ? `<br>Proper control: ${l.next_point} ${hhmm(l.next_eta)} (previst)` : l.status === "FINISHED" ? "<br>Arribat" : "");
+        let mk = leaderMarkers.current[key];
+        if (!mk) {
+          mk = L.marker([l.lat, l.lon], { icon: leaderIcon(l.rank, race.color, l.estimated), zIndexOffset: 500 - l.rank }).addTo(m);
+          mk.bindTooltip(tip, { direction: "top", offset: [0, -12] });
+          leaderMarkers.current[key] = mk;
+        } else {
+          mk.setLatLng([l.lat, l.lon]);
+          mk.setIcon(leaderIcon(l.rank, race.color, l.estimated));
+          mk.setZIndexOffset(500 - l.rank);
+          mk.setTooltipContent(tip);
+        }
+      }
+    }
+    for (const key of Object.keys(leaderMarkers.current)) {
+      if (!seen.has(key)) {
+        leaderMarkers.current[key].remove();
+        delete leaderMarkers.current[key];
+      }
+    }
+  }, [leaders, races, hidden]);
 
   // Motxilles
   useEffect(() => {

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { Leader } from "@/lib/trail/estimate";
 
 export interface ProfileDevice {
   id: string;
@@ -14,6 +15,8 @@ export interface ProfileDevice {
 interface Props {
   race: { id: string; name: string; color: string; gpx: { total_km: number; track: number[][] } | null; checkpoints: { id: number; name: string; km: number }[] };
   devices: ProfileDevice[];
+  /** Primers de la cursa (posició estimada) */
+  leaders?: Leader[];
   /** Posició (lat, lon) del punt del perfil sota el ratolí, per mostrar-lo al mapa; null en sortir. */
   onHover?: (p: [number, number] | null) => void;
   height?: number;
@@ -22,7 +25,7 @@ interface Props {
 const M = { l: 46, r: 16, t: 30, b: 26 };
 
 /** Perfil d'elevació d'una cursa (GPX): controls, motxilles al seu km i cursor lligat al mapa. */
-export default function ElevationProfile({ race, devices, onHover, height = 190 }: Props) {
+export default function ElevationProfile({ race, devices, leaders = [], onHover, height = 190 }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(900);
   const [hover, setHover] = useState<{ km: number; ele: number; grad: number } | null>(null);
@@ -177,6 +180,21 @@ export default function ElevationProfile({ race, devices, onHover, height = 190 
               </g>
             );
           })}
+
+        {/* primers de la cursa (estimats): cercle amb la posició; vora discontínua = entre controls */}
+        {leaders.map((l) => {
+          const x = X(l.km);
+          const y = Y(eleAt(l.km));
+          return (
+            <g key={l.bib}>
+              <circle cx={x} cy={y} r="10" fill={race.color} stroke="#fff" strokeWidth={l.estimated ? 2 : 3} strokeDasharray={l.estimated ? "3 2" : undefined} />
+              <text x={x} y={y + 4} textAnchor="middle" fontSize="11" fontWeight="900" fill="#0b0f14">
+                {l.rank}
+              </text>
+              <title>{`${l.rank}º #${l.bib} ${l.name} · km ${l.km.toFixed(1)}${l.estimated ? " (estimat)" : ""}`}</title>
+            </g>
+          );
+        })}
 
         {/* cursor */}
         {hover && (

@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { Leader } from "@/lib/trail/estimate";
 import ElevationProfile from "@/components/trail/ElevationProfile";
 import TrailNav from "@/components/trail/TrailNav";
 import { useLive } from "@/lib/client/useLive";
@@ -19,6 +20,39 @@ export default function MapPage({ params }: { params: { id: string } }) {
   const [tab, setTab] = useState<string | null>(null);
   const [hoverPoint, setHoverPoint] = useState<[number, number] | null>(null);
   const [profileOpen, setProfileOpen] = useState(true);
+  // quants primers es marquen de cada cursa (0 = cap) i de quina categoria; es recorda al navegador
+  const [top, setTop] = useState<Record<string, number>>({});
+  const [topSex, setTopSex] = useState<"all" | "M" | "F">("all");
+  const storeKey = `gfx-top-${params.id}`;
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(storeKey) ?? "null");
+      if (v?.top) setTop(v.top);
+      if (v?.sex) setTopSex(v.sex);
+    } catch {
+      /* sense memòria local: es parteix de zero */
+    }
+  }, [storeKey]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(storeKey, JSON.stringify({ top, sex: topSex }));
+    } catch {
+      /* ignorat */
+    }
+  }, [top, topSex, storeKey]);
+  // ?at=<ISO> reprodueix un instant d'una cursa passada (proves i demostracions)
+  const [replayAt, setReplayAt] = useState<string | null>(null);
+  useEffect(() => setReplayAt(new URLSearchParams(window.location.search).get("at")), []);
+  const selParam = Object.entries(top)
+    .filter(([, n]) => n > 0)
+    .map(([id, n]) => `${id}:${n}`)
+    .join(",");
+  const { data: leadersData } = useLive<{ races: Record<string, Leader[]> }>(
+    selParam ? `/api/trail/events/${params.id}/leaders?sel=${selParam}&sex=${topSex}${replayAt ? `&at=${encodeURIComponent(replayAt)}` : ""}` : "",
+    ["trail:changed"],
+    2000
+  );
+  const leaders = selParam && leadersData?.races ? leadersData.races : undefined;
 
   async function assign(id: string, patch: Record<string, any>) {
     await fetch(`/api/trail/events/${params.id}/devices`, {
@@ -44,7 +78,7 @@ export default function MapPage({ params }: { params: { id: string } }) {
       <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_380px]">
         <div className="flex min-h-0 min-w-0 flex-col">
           <div className="relative min-h-[40vh] flex-1">
-            {ev && <TrailMap races={races} devices={devices} hidden={hidden} focus={focus} focusRaceId={activeId} hoverPoint={hoverPoint} />}
+            {ev && <TrailMap races={races} devices={devices} hidden={hidden} focus={focus} focusRaceId={activeId} hoverPoint={hoverPoint} leaders={leaders} />}
           </div>
 
           {/* Perfil del GPX, amb pestanyes per cursa */}
@@ -89,22 +123,50 @@ export default function MapPage({ params }: { params: { id: string } }) {
             </div>
             {profileOpen && active && (
               <div className="border-t border-white/10 bg-white/[0.03] px-2 pb-1">
-                <ElevationProfile race={active} devices={activeDevices} onHover={setHoverPoint} height={190} />
+                <ElevationProfile race={active} devices={activeDevices} leaders={activeId && leaders ? leaders[activeId] : undefined} onHover={setHoverPoint} height={190} />
               </div>
             )}
           </div>
         </div>
 
         <aside className="min-h-0 overflow-y-auto border-l border-white/10 bg-[#0b0f14] p-4">
-          <h2 className="text-xs font-bold tracking-widest text-slate-400">CURSES</h2>
-          <div className="mt-2 space-y-1">
+          <h2 className="text-xs font-bold tracking-widest text-slate-400">CURSES I PRIMERS</h2>
+          <p className="mt-1 text-[11px] leading-snug text-slate-500">
+            Marca al mapa i al perfil els primers de cada cursa. La posició és <b>estimada</b> a partir dels passos per control i el desnivell del GPX; el cercle amb vora discontínua és entre controls i el ple, just en un control.
+          </p>
+          <div className="mt-2 flex gap-1">
+            {([["all", "General"], ["M", "Homes"], ["F", "Dones"]] as const).map(([v, label]) => (
+              <button key={v} onClick={() => setTopSex(v)} className={`flex-1 rounded-md border px-2 py-1 text-xs font-bold ${topSex === v ? "border-sky-500/60 bg-sky-500/10" : "border-white/10 hover:bg-white/5"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 space-y-2">
             {races.map((r: any) => (
-              <label key={r.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                <input type="checkbox" checked={!hidden[r.id]} onChange={() => setHidden((h) => ({ ...h, [r.id]: !h[r.id] }))} />
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
-                <span className="font-semibold">{r.name}</span>
-                <span className="ml-auto text-xs text-slate-500">{r.gpx ? `${r.gpx.total_km} km` : "sense GPX"}</span>
-              </label>
+              <div key={r.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input type="checkbox" checked={!hidden[r.id]} onChange={() => setHidden((h) => ({ ...h, [r.id]: !h[r.id] }))} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
+                  <span className="font-semibold">{r.name}</span>
+                  <span className="ml-auto text-xs text-slate-500">{r.gpx ? `${r.gpx.total_km} km` : "sense GPX"}</span>
+                </label>
+                <div className="mt-1.5 flex items-center gap-1">
+                  <span className="mr-1 text-[10px] font-bold tracking-widest text-slate-500">PRIMERS</span>
+                  {[0, 3, 5, 10].map((n) => (
+                    <button
+                      key={n}
+                      disabled={!r.gpx}
+                      onClick={() => setTop((t) => ({ ...t, [r.id]: n }))}
+                      className={`h-7 flex-1 rounded-md border text-xs font-black disabled:opacity-30 ${
+                        (top[r.id] ?? 0) === n ? "border-sky-500/60 bg-sky-500/20 text-white" : "border-white/10 text-slate-400 hover:bg-white/5"
+                      }`}
+                      style={(top[r.id] ?? 0) === n && n > 0 ? { boxShadow: `inset 0 -3px 0 ${r.color}` } : undefined}
+                    >
+                      {n === 0 ? "Cap" : `Top ${n}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 
