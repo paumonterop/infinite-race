@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import ElevationProfile from "@/components/trail/ElevationProfile";
 import TrailNav from "@/components/trail/TrailNav";
 import { useLive } from "@/lib/client/useLive";
 import type { GpsPosition } from "@/lib/trail/types";
@@ -15,6 +16,9 @@ export default function MapPage({ params }: { params: { id: string } }) {
   const { data: gps, refetch } = useLive<GpsPosition[]>(`/api/trail/events/${params.id}/gps`, [], 1500);
   const [focus, setFocus] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
+  const [tab, setTab] = useState<string | null>(null);
+  const [hoverPoint, setHoverPoint] = useState<[number, number] | null>(null);
+  const [profileOpen, setProfileOpen] = useState(true);
 
   async function assign(id: string, patch: Record<string, any>) {
     await fetch(`/api/trail/events/${params.id}/devices`, {
@@ -25,21 +29,76 @@ export default function MapPage({ params }: { params: { id: string } }) {
     refetch();
   }
 
-  const devices = gps ?? [];
+  const devices = Array.isArray(gps) ? gps : [];
   const online = devices.filter((d) => d.status === "online").length;
+
+  // cursa de la pestanya activa: la triada o, per defecte, la primera amb GPX
+  const races: any[] = ev?.races ?? [];
+  const activeId = tab && races.some((r) => r.id === tab) ? tab : (races.find((r) => r.gpx) ?? races[0])?.id ?? null;
+  const active = races.find((r) => r.id === activeId);
+  const activeDevices = useMemo(() => devices.filter((d) => d.race_id === activeId), [devices, activeId]);
 
   return (
     <div className="flex h-screen flex-col">
       <TrailNav eventId={params.id} name={ev?.name} />
       <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_380px]">
-        <div className="relative min-h-[50vh]">
-          {ev && <TrailMap races={ev.races} devices={devices} hidden={hidden} focus={focus} />}
+        <div className="flex min-h-0 min-w-0 flex-col">
+          <div className="relative min-h-[40vh] flex-1">
+            {ev && <TrailMap races={races} devices={devices} hidden={hidden} focus={focus} focusRaceId={activeId} hoverPoint={hoverPoint} />}
+          </div>
+
+          {/* Perfil del GPX, amb pestanyes per cursa */}
+          <div className="shrink-0 border-t border-white/10 bg-[#0b0f14]">
+            <div className="flex items-center gap-1 overflow-x-auto px-3 pt-2">
+              <span className="mr-2 text-[10px] font-bold tracking-widest text-slate-500">PERFIL</span>
+              {races.length > 1 ? (
+                races.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => {
+                      setTab(r.id);
+                      setProfileOpen(true);
+                    }}
+                    className={`flex shrink-0 items-center gap-2 rounded-t-lg border border-b-0 px-3 py-1.5 text-sm font-bold ${
+                      activeId === r.id ? "border-white/20 bg-white/[0.06] text-white" : "border-transparent text-slate-400 hover:bg-white/5"
+                    }`}
+                    style={activeId === r.id ? { boxShadow: `inset 0 3px 0 ${r.color}` } : undefined}
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
+                    {r.name}
+                    <span className="text-xs font-normal text-slate-500">{r.gpx ? `${r.gpx.total_km} km` : "sense GPX"}</span>
+                  </button>
+                ))
+              ) : (
+                active && (
+                  <span className="flex items-center gap-2 text-sm font-bold">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: active.color }} />
+                    {active.name}
+                    <span className="text-xs font-normal text-slate-500">{active.gpx ? `${active.gpx.total_km} km` : ""}</span>
+                  </span>
+                )
+              )}
+              {active?.gpx && (
+                <span className="ml-3 hidden shrink-0 text-xs text-slate-400 md:inline">
+                  {active.distance_m ? `${(active.distance_m / 1000).toFixed(1)} km · ` : ""}+{active.elevation_gain ?? Math.round(active.gpx.elevation_gain ?? 0)} m · {(() => { const n = activeDevices.filter((d) => d.status === "online" && d.km != null).length; return `${n} ${n === 1 ? "motxilla" : "motxilles"} en ruta`; })()}
+                </span>
+              )}
+              <button onClick={() => setProfileOpen((o) => !o)} className="ml-auto shrink-0 rounded bg-white/10 px-2 py-0.5 text-xs font-bold hover:bg-white/20" title="Plega o desplega el perfil">
+                {profileOpen ? "▾ Plega" : "▴ Desplega"}
+              </button>
+            </div>
+            {profileOpen && active && (
+              <div className="border-t border-white/10 bg-white/[0.03] px-2 pb-1">
+                <ElevationProfile race={active} devices={activeDevices} onHover={setHoverPoint} height={190} />
+              </div>
+            )}
+          </div>
         </div>
 
         <aside className="min-h-0 overflow-y-auto border-l border-white/10 bg-[#0b0f14] p-4">
           <h2 className="text-xs font-bold tracking-widest text-slate-400">CURSES</h2>
           <div className="mt-2 space-y-1">
-            {ev?.races.map((r: any) => (
+            {races.map((r: any) => (
               <label key={r.id} className="flex cursor-pointer items-center gap-2 text-sm">
                 <input type="checkbox" checked={!hidden[r.id]} onChange={() => setHidden((h) => ({ ...h, [r.id]: !h[r.id] }))} />
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
@@ -57,22 +116,29 @@ export default function MapPage({ params }: { params: { id: string } }) {
           </h2>
           {devices.length === 0 && (
             <p className="text-sm text-slate-500">
-              Cap motxilla connectada. Les motxilles han d'enviar l'event <code>gps_data</code> per Socket.IO a aquest servidor.
+              Cap motxilla connectada. Les motxilles han d&apos;enviar l&apos;event <code>gps_data</code> per Socket.IO a aquest servidor.
             </p>
           )}
           <div className="space-y-2">
             {devices.map((d) => {
-              const race = ev?.races.find((r: any) => r.id === d.race_id);
+              const race = races.find((r: any) => r.id === d.race_id);
               return (
                 <div
                   key={d.id}
-                  onClick={() => d.lat != null && setFocus(d.id + ":" + Date.now())}
+                  onClick={() => {
+                    if (d.lat != null) setFocus(d.id + ":" + Date.now());
+                    if (d.race_id) setTab(d.race_id);
+                  }}
                   className="cursor-pointer rounded-xl border border-white/10 bg-white/[0.02] p-3 hover:border-sky-500/40"
                 >
                   <div className="flex items-center gap-2">
                     <span className={`h-2.5 w-2.5 rounded-full ${d.status === "online" ? "bg-emerald-400" : "bg-slate-600"}`} />
                     <span className="font-bold">{d.label}</span>
-                    {d.runner_name && <span className="truncate text-sm text-slate-300">· #{d.bib} {d.runner_name}</span>}
+                    {d.runner_name && (
+                      <span className="truncate text-sm text-slate-300">
+                        · #{d.bib} {d.runner_name}
+                      </span>
+                    )}
                     <span className="ml-auto text-xs text-slate-500">{d.speed_kmh != null ? `${d.speed_kmh.toFixed(1)} km/h` : ""}</span>
                   </div>
                   {d.km != null && race?.gpx && (
@@ -81,7 +147,9 @@ export default function MapPage({ params }: { params: { id: string } }) {
                         <div className="h-full" style={{ width: `${d.pct}%`, background: race.color }} />
                       </div>
                       <div className="mt-1 flex justify-between text-[11px] text-slate-400">
-                        <span>km {d.km} / {race.gpx.total_km}</span>
+                        <span>
+                          km {d.km} / {race.gpx.total_km}
+                        </span>
                         <span>{d.off_route ? "⚠ fora de ruta" : `${d.pct}%`}</span>
                       </div>
                     </div>
@@ -93,8 +161,10 @@ export default function MapPage({ params }: { params: { id: string } }) {
                       className="min-w-0 flex-1 rounded-md border border-white/10 bg-[#0b0f14] px-2 py-1 text-xs"
                     >
                       <option value="">— cursa —</option>
-                      {ev?.races.map((r: any) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
+                      {races.map((r: any) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name}
+                        </option>
                       ))}
                     </select>
                     <input
