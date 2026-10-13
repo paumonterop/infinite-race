@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import { useLive } from "@/lib/client/useLive";
 import type { Layer } from "@/lib/trail/scenes";
-import type { Analysis, SlopeSegment } from "@/lib/trail/analysis";
+import type { Analysis } from "@/lib/trail/analysis";
 import type { WeatherLoc } from "@/lib/trail/weather";
 import type { SurfaceState, SurfaceType } from "@/lib/trail/surface";
 import { STAGE, T, gradientColor, useSceneAnim } from "./ui";
@@ -23,50 +23,8 @@ export function useAnalysis(eventId: string, raceId: string | undefined) {
   return data && !(data as any).error ? data : null;
 }
 
-// ── Trams entre controls (pujada/baixada), com a /admin/gpx-analysis ──
-interface CpSegment {
-  km_start: number;
-  km_end: number;
-  name: string;
-  type: "UPHILL" | "DOWNHILL";
-  gain_m: number;
-  loss_m: number;
-}
-
-function sumOverRange(segs: SlopeSegment[], a: number, b: number) {
-  let gain = 0;
-  let loss = 0;
-  for (const s of segs) {
-    const lo = Math.max(s.km_start, a);
-    const hi = Math.min(s.km_end, b);
-    if (hi <= lo) continue;
-    const f = (hi - lo) / (s.km_end - s.km_start);
-    gain += s.gain_m * f;
-    loss += s.loss_m * f;
-  }
-  return { gain, loss };
-}
-
-export function checkpointSegments(a: Analysis): CpSegment[] {
-  const pts = [
-    { name: "Sortida", km: 0 },
-    ...[...a.checkpoints].sort((x, y) => x.km_on_track - y.km_on_track).map((c) => ({ name: c.name, km: c.km_on_track })),
-    { name: "Meta", km: a.distance_km },
-  ].filter((p, i, arr) => i === 0 || p.km - arr[i - 1].km > 0.01);
-  const out: CpSegment[] = [];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const { gain, loss } = sumOverRange(a.slope_segments, pts[i].km, pts[i + 1].km);
-    out.push({
-      km_start: Math.round(pts[i].km * 100) / 100,
-      km_end: Math.round(pts[i + 1].km * 100) / 100,
-      name: `${pts[i].name} → ${pts[i + 1].name}`,
-      type: gain >= loss ? "UPHILL" : "DOWNHILL",
-      gain_m: Math.round(gain),
-      loss_m: Math.round(loss),
-    });
-  }
-  return out;
-}
+import { checkpointSegments } from "@/lib/trail/segments";
+export { checkpointSegments };
 
 /** Perfil d'un tram (km_start..km_end) acolorit per pendent (finestra mòbil). */
 export function GradientProfile({ points, from, to, W = 1400, H = 220, stroke = 12, delay = 0.5 }: { points: number[][]; from: number; to: number; W?: number; H?: number; stroke?: number; delay?: number }) {
