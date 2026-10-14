@@ -13,6 +13,7 @@ export type SceneId =
   | "highlights_climb"
   | "highlights_descent"
   | "highlights_surface"
+  | "profile_leaders"
   | "weather"
   | "checkpoint"
   | "runner_chyron"
@@ -47,6 +48,7 @@ export const SCENES: SceneDef[] = [
   { id: "highlights_climb", label: "La pujada més dura", desc: "Perfil acolorit per pendent del tram més dur.", group: "Cursa", slot: "main", needs: ["race"] },
   { id: "highlights_descent", label: "La gran baixada", desc: "Perfil acolorit del tram de més baixada.", group: "Cursa", slot: "main", needs: ["race"] },
   { id: "highlights_surface", label: "Superfícies", desc: "Tipus de terreny del recorregut (OpenStreetMap).", group: "Cursa", slot: "main", needs: ["race"] },
+  { id: "profile_leaders", label: "Perfil amb els primers", desc: "Perfil de la cursa amb el top 3 d'homes i dones al seu punt.", group: "Cursa", slot: "lower", needs: ["race"] },
   { id: "weather", label: "Meteo", desc: "Previsió a sortida, cim i meta (Open-Meteo).", group: "Cursa", slot: "lower", needs: ["race"] },
   { id: "checkpoint", label: "Punt de pas", desc: "Nom del control, km i altitud.", group: "Cursa", slot: "lower", needs: ["race", "point"] },
   { id: "runner_chyron", label: "Chyron de corredor", desc: "Tercer inferior amb nom, club i dorsal.", group: "Atletes", slot: "lower", needs: ["race", "bib"] },

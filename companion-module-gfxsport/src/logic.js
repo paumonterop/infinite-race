@@ -239,6 +239,7 @@ function buildPresets(state, rgb, label) {
 		add(`hl_climb_${r.id}`, '2 · Cursa', `Pujada més dura ${r.name}`, `PUJADA\\nDURA\\n${S}`, COL.cursa, on({ scene: 'highlights_climb', race: r.id }))
 		add(`hl_desc_${r.id}`, '2 · Cursa', `Gran baixada ${r.name}`, `GRAN\\nBAIXADA\\n${S}`, COL.cursa, on({ scene: 'highlights_descent', race: r.id }))
 		add(`hl_surf_${r.id}`, '2 · Cursa', `Superfícies ${r.name}`, `SUPERF.\\n${S}`, COL.cursa, on({ scene: 'highlights_surface', race: r.id }))
+		add(`prof_lead_${r.id}`, '2 · Cursa', `Perfil amb els primers ${r.name}`, `PERFIL\\nPRIMERS\\n${S}`, COL.cursa, on({ scene: 'profile_leaders', race: r.id }))
 		add(`weather_${r.id}`, '2 · Cursa', `Meteo ${r.name}`, `METEO\\n${S}`, COL.cursa, on({ scene: 'weather', race: r.id }))
 		add(`stats_${r.id}`, '2 · Cursa', `Estadístiques ${r.name}`, `ESTADÍST.\\n${S}`, COL.cursa, on({ scene: 'race_stats', race: r.id }))
 

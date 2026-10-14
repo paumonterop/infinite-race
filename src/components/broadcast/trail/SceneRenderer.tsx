@@ -4,6 +4,7 @@ import TrailPresentation from "@/components/broadcast/TrailPresentation";
 import { Layer, Program, SCENE_BY_ID, Slot } from "@/lib/trail/scenes";
 import { ChronoAllScene, ChronoScene, GpsGradientScene, GpsSpeedScene } from "./ChronoGauges";
 import { FavoritesScene, HistoryRecordScene, HistoryWinnersScene, LeaderboardScene, MiniLeaderboardScene, PositionTagScene, RaceStatsScene } from "./ListScenes";
+import { ProfileLeadersScene } from "./ProfileScene";
 import { HighlightsScene, SceneProps, WeatherScene, raceOf } from "./RaceScenes";
 import { OtherChyronScene, RunnerCardScene, RunnerChyronScene } from "./RunnerScenes";
 import { CheckpointScene, SegmentInfoScene, SegmentProfileScene } from "./SegmentScenes";
@@ -40,6 +41,8 @@ export function Scene(props: SceneProps & { shift?: boolean }) {
     case "highlights_descent":
     case "highlights_surface":
       return <HighlightsScene {...props} />;
+    case "profile_leaders":
+      return <ProfileLeadersScene {...props} />;
     case "weather":
       return <WeatherScene {...props} />;
     case "checkpoint":
