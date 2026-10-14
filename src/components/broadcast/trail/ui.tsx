@@ -51,9 +51,13 @@ export function fmtHMS(s: number | null | undefined) {
   return `${h}:${String(m).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
+/** Diferència amb el primer: «+3:50» i, a partir d'una hora, «+1:05:12». */
 export function fmtGap(s: number) {
-  const m = Math.floor(s / 60);
-  return `+${m}:${String(s % 60).padStart(2, "0")}`;
+  const sec = Math.max(0, Math.round(s));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const ss = String(sec % 60).padStart(2, "0");
+  return h > 0 ? `+${h}:${String(m).padStart(2, "0")}:${ss}` : `+${m}:${ss}`;
 }
 
 export function initials(name: string) {
