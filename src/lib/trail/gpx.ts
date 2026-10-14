@@ -118,3 +118,24 @@ export function gradientAt(gpx: TrailGpx, km: number): { gradient_pct: number; e
   if (ea == null || eb == null || b - a <= 0) return { gradient_pct: 0, ele_m: ele };
   return { gradient_pct: +(((eb - ea) / ((b - a) * 1000)) * 100).toFixed(1), ele_m: ele };
 }
+
+/** Com projectOnTrack, però només sobre el tram entre els km k0 i k1 (evita ambigüitats si el track passa dos cops pel mateix lloc). */
+export function projectOnTrackRange(gpx: TrailGpx, lat: number, lon: number, k0: number, k1: number) {
+  const pts = gpx.points;
+  const kx = Math.cos(rad(lat)) * 111320;
+  const ky = 110574;
+  let best: { dist: number; km: number } | null = null;
+  for (let i = 1; i < pts.length; i++) {
+    const [la1, lo1, ka] = pts[i - 1];
+    const [la2, lo2, kb] = pts[i];
+    if (kb < k0 - 0.3 || ka > k1 + 0.3) continue;
+    const ax = (lo1 - lon) * kx, ay = (la1 - lat) * ky;
+    const bx = (lo2 - lon) * kx, by = (la2 - lat) * ky;
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    const tt = len2 === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+    const d = Math.hypot(ax + tt * dx, ay + tt * dy);
+    if (!best || d < best.dist) best = { dist: d, km: ka + tt * (kb - ka) };
+  }
+  return best ? { km: Math.min(k1, Math.max(k0, best.km)), off_route_m: best.dist } : null;
+}

@@ -147,21 +147,32 @@ export default function ElevationProfile({ race, devices, leaders = [], onHover,
         <path d={area} fill={`url(#${gid})`} />
         <path d={line} fill="none" stroke={race.color} strokeWidth="2" strokeLinejoin="round" />
 
-        {/* controls */}
-        {cps.map((c, i) => {
-          const x = X(c.km);
-          const y = Y(eleAt(c.km));
-          const row = i % 2;
-          return (
-            <g key={c.id}>
-              <line x1={x} x2={x} y1={M.t - 4 - row * 12} y2={y} stroke="rgba(255,255,255,0.35)" strokeDasharray="2 3" />
-              <circle cx={x} cy={y} r="4" fill="#0b0f14" stroke="#fff" strokeWidth="2" />
-              <text x={x} y={M.t - 7 - row * 12} textAnchor="middle" fontSize="10" fontWeight="700" fill="#e2e8f0">
-                {c.name}
-              </text>
-            </g>
-          );
-        })}
+        {/* controls: el punt sempre; el nom només si hi cap (sense solapar-se amb l'anterior) */}
+        {(() => {
+          let lastEnd = -Infinity;
+          let row = 0;
+          return cps.map((c) => {
+            const x = X(c.km);
+            const y = Y(eleAt(c.km));
+            const half = c.name.length * 2.9 + 4; // amplada aproximada de l'etiqueta
+            const fits = x - half > lastEnd + 4;
+            if (fits) {
+              lastEnd = x + half;
+              row = 1 - row;
+            }
+            return (
+              <g key={c.id}>
+                {fits && <line x1={x} x2={x} y1={M.t - 4 - row * 12} y2={y} stroke="rgba(255,255,255,0.35)" strokeDasharray="2 3" />}
+                <circle cx={x} cy={y} r="4" fill="#0b0f14" stroke="#fff" strokeWidth="2" />
+                {fits && (
+                  <text x={x} y={M.t - 7 - row * 12} textAnchor="middle" fontSize="10" fontWeight="700" fill="#e2e8f0">
+                    {c.name}
+                  </text>
+                )}
+              </g>
+            );
+          });
+        })()}
 
         {/* motxilles en línia assignades a aquesta cursa */}
         {devices
@@ -187,11 +198,12 @@ export default function ElevationProfile({ race, devices, leaders = [], onHover,
           const y = Y(eleAt(l.km));
           return (
             <g key={l.bib}>
-              <circle cx={x} cy={y} r="10" fill={race.color} stroke="#fff" strokeWidth={l.estimated ? 2 : 3} strokeDasharray={l.estimated ? "3 2" : undefined} />
+              {l.origin === "gps" && <circle cx={x} cy={y} r="14" fill="none" stroke="#34d399" strokeOpacity="0.6" strokeWidth="3" />}
+              <circle cx={x} cy={y} r="10" fill={race.color} stroke="#fff" strokeWidth={l.origin === "gps" ? 3 : 2} strokeDasharray={l.origin === "livetrail" ? "3 2" : l.origin === "model" && l.estimated ? "1 2" : undefined} />
               <text x={x} y={y + 4} textAnchor="middle" fontSize="11" fontWeight="900" fill="#0b0f14">
                 {l.rank}
               </text>
-              <title>{`${l.rank}º #${l.bib} ${l.name} · km ${l.km.toFixed(1)}${l.estimated ? " (estimat)" : ""}`}</title>
+              <title>{`${l.rank}º #${l.bib} ${l.name} · km ${l.km.toFixed(1)} · ${l.origin === "gps" ? "GPS" : l.origin === "livetrail" ? "previsió de LiveTrail" : "estimació pròpia"}`}</title>
             </g>
           );
         })}

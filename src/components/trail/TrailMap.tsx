@@ -29,14 +29,19 @@ function markerIcon(label: string, color: string, online: boolean, off: boolean)
   });
 }
 
-function leaderIcon(rank: number, color: string, estimated: boolean) {
+/** Vora: GPS = contínua i gruixuda; previsió de LiveTrail = discontínua; estimació pròpia = de punts. */
+function leaderIcon(rank: number, color: string, origin: "gps" | "livetrail" | "model", estimated: boolean) {
+  const border = origin === "gps" ? "3px solid #fff" : origin === "livetrail" ? "2px dashed #fff" : estimated ? "2px dotted #fff" : "3px solid #fff";
+  const glow = origin === "gps" ? "0 0 0 4px rgba(52,211,153,.55)," : "";
   return L.divIcon({
     className: "",
-    html: `<div style="width:26px;height:26px;border-radius:50%;background:${color};border:${estimated ? "2px dashed" : "3px solid"} #fff;color:#0b0f14;font:900 13px system-ui;display:flex;align-items:center;justify-content:center;box-shadow:0 0 7px rgba(0,0,0,.75)">${rank}</div>`,
+    html: `<div style="width:26px;height:26px;border-radius:50%;background:${color};border:${border};color:#0b0f14;font:900 13px system-ui;display:flex;align-items:center;justify-content:center;box-shadow:${glow}0 0 7px rgba(0,0,0,.75)">${rank}</div>`,
     iconSize: [26, 26],
     iconAnchor: [13, 13],
   });
 }
+
+const ORIGIN_TXT = { gps: "posició GPS", livetrail: "previsió de LiveTrail", model: "estimació pròpia" } as const;
 
 const ord = (n: number) => (n === 1 ? "1r" : n === 2 ? "2n" : n === 3 ? "3r" : n === 4 ? "4t" : `${n}è`);
 const hhmm = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString("ca-ES", { hour: "2-digit", minute: "2-digit" }) : "");
@@ -71,6 +76,10 @@ export default function TrailMap({ races, devices, hidden, focus, focusRaceId, h
       markers.current = {};
       leaderMarkers.current = {};
       hoverMarker.current = null;
+      // si el mapa es recrea (p. ex. mode estricte de React), tot s'ha de tornar a dibuixar i enquadrar
+      lastTrackKey.current = "";
+      lastFocusRace.current = null;
+      fitted.current = false;
     };
   }, []);
 
@@ -146,16 +155,16 @@ export default function TrailMap({ races, devices, hidden, focus, focusRaceId, h
         const key = `${raceId}:${l.bib}`;
         seen.add(key);
         const tip =
-          `<b>${ord(l.rank)} · #${l.bib} ${l.name}</b><br>${race.name}<br>km ${l.km.toFixed(1)}${l.estimated ? " (estimat)" : ""}` +
+          `<b>${ord(l.rank)} · #${l.bib} ${l.name}</b><br>${race.name}<br>km ${l.km.toFixed(1)} · ${ORIGIN_TXT[l.origin]}` +
           (l.next_point ? `<br>Proper control: ${l.next_point} ${hhmm(l.next_eta)} (previst)` : l.status === "FINISHED" ? "<br>Arribat" : "");
         let mk = leaderMarkers.current[key];
         if (!mk) {
-          mk = L.marker([l.lat, l.lon], { icon: leaderIcon(l.rank, race.color, l.estimated), zIndexOffset: 500 - l.rank }).addTo(m);
+          mk = L.marker([l.lat, l.lon], { icon: leaderIcon(l.rank, race.color, l.origin, l.estimated), zIndexOffset: 500 - l.rank }).addTo(m);
           mk.bindTooltip(tip, { direction: "top", offset: [0, -12] });
           leaderMarkers.current[key] = mk;
         } else {
           mk.setLatLng([l.lat, l.lon]);
-          mk.setIcon(leaderIcon(l.rank, race.color, l.estimated));
+          mk.setIcon(leaderIcon(l.rank, race.color, l.origin, l.estimated));
           mk.setZIndexOffset(500 - l.rank);
           mk.setTooltipContent(tip);
         }

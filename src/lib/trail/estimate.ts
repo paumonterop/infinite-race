@@ -23,7 +23,9 @@ export interface Leader {
   lat: number;
   lon: number;
   ele: number | null;
-  estimated: boolean; // false = just al control (posició real)
+  estimated: boolean; // false = posició real (GPS o just en un control)
+  /** d'on surt la posició: GPS, previsió de LiveTrail o estimació pròpia */
+  origin: "gps" | "livetrail" | "model";
   last_point: string | null;
   last_at: string | null;
   next_point: string | null;
@@ -181,6 +183,7 @@ export function estimate(runner: TrailRunner, race: TrailRace, now: number, curv
     lon,
     ele,
     estimated,
+    origin: "model",
     last_point: lastCp?.name ?? null,
     last_at: new Date(lastPt.t).toISOString(),
     next_point: finished ? null : nextCp?.name ?? null,

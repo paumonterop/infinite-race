@@ -132,7 +132,8 @@ export default function MapPage({ params }: { params: { id: string } }) {
         <aside className="min-h-0 overflow-y-auto border-l border-white/10 bg-[#0b0f14] p-4">
           <h2 className="text-xs font-bold tracking-widest text-slate-400">CURSES I PRIMERS</h2>
           <p className="mt-1 text-[11px] leading-snug text-slate-500">
-            Marca al mapa i al perfil els primers de cada cursa. La posició és <b>estimada</b> a partir dels passos per control i el desnivell del GPX; el cercle amb vora discontínua és entre controls i el ple, just en un control.
+            Marca al mapa i al perfil els primers de cada cursa, com fa LiveTrail: amb el seu <b>GPS</b> si en tenen (cercle amb halo verd) i, si no, segons la{" "}
+            <b>previsió de pas de LiveTrail</b> (vora discontínua). Si LiveTrail no en dona, es fa servir una estimació pròpia (vora de punts).
           </p>
           <div className="mt-2 flex gap-1">
             {([["all", "General"], ["M", "Homes"], ["F", "Dones"]] as const).map(([v, label]) => (
