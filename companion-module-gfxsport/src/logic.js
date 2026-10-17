@@ -247,6 +247,10 @@ function buildPresets(state, rgb, label) {
 			const SX = sx === 'M' ? 'HOMES' : 'DONES'
 			add(`lb_${r.id}_${sx}`, '3 · Classificació', `Classificació ${SX} ${r.name}`, `CLASSIF.\\n${SX}\\n${S}`, COL.classif, on({ scene: 'leaderboard', race: r.id, sex: sx }))
 			add(`mini_${r.id}_${sx}`, '3 · Classificació', `Top 5 petita ${SX} ${r.name}`, `TOP 5\\n${SX}\\n${S}`, COL.classif, on({ scene: 'leaderboard_mini', race: r.id, sex: sx }))
+			for (const c of r.checkpoints) {
+				const cpn = String(c.name).toUpperCase().slice(0, 9)
+				add(`minipt_${r.id}_${sx}_${c.id}`, `3 · Top 5 per punt ${S}`, `Top 5 ${SX} a ${c.name} (${r.name})`, `TOP5 ${sx === 'M' ? 'H' : 'D'}\\n${cpn}\\n${S}`, COL.classif, on({ scene: 'leaderboard_point_mini', race: r.id, sex: sx, point: `${r.id}|${c.id}` }), { size: '14' })
+			}
 			add(`fav_${r.id}_${sx}`, '3 · Classificació', `Favorits ${SX} ${r.name}`, `FAVORITS\\n${SX}\\n${S}`, COL.classif, on({ scene: 'favorites', race: r.id, sex: sx }))
 			for (let p = 1; p <= 5; p++) {
 				add(`pos_${r.id}_${sx}_${p}`, `4 · Posició ${S}`, `${ORD[p]} ${SX} ${r.name}`, `${ORD[p]}\\n${sx === 'M' ? 'HOME' : 'DONA'}\\n${S}`, COL.pos, on({ scene: 'position_tag', race: r.id, sex: sx, position: p }), { size: '18' })

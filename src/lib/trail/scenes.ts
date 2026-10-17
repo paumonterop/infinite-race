@@ -22,6 +22,7 @@ export type SceneId =
   | "leaderboard"
   | "position_tag"
   | "leaderboard_mini"
+  | "leaderboard_point_mini"
   | "race_stats"
   | "favorites"
   | "history_record"
@@ -57,6 +58,7 @@ export const SCENES: SceneDef[] = [
   { id: "leaderboard", label: "Classificació", desc: "Top 10 d'homes o dones en directe.", group: "Classificacions", slot: "main", needs: ["race", "sex"] },
   { id: "position_tag", label: "Posició (1r–5è)", desc: "Etiqueta «1r HOME · cursa» amb qui hi és ara.", group: "Classificacions", slot: "tag", needs: ["race", "sex", "position"] },
   { id: "leaderboard_mini", label: "Classificació petita (top 5)", desc: "Top 5 en un racó de la pantalla (baix a la dreta).", group: "Classificacions", slot: "mini", needs: ["race", "sex"] },
+  { id: "leaderboard_point_mini", label: "Top 5 petit d'un punt de pas", desc: "Els 5 primers en passar per un control, amb el temps del primer i la diferència.", group: "Classificacions", slot: "mini", needs: ["race", "sex", "point"] },
   { id: "race_stats", label: "Estadístiques de la cursa", desc: "Inscrits, en cursa, arribats i quants han passat per cada control.", group: "Estadístiques", slot: "main", needs: ["race"] },
   { id: "favorites", label: "Top 10 favorits", desc: "Els millors de les edicions anteriors.", group: "Classificacions", slot: "main", needs: ["race", "sex"] },
   { id: "history_record", label: "Rècord de la cursa", desc: "Rècord d'homes i dones amb l'any.", group: "Històric", slot: "main", needs: ["race"] },

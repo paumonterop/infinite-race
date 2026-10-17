@@ -212,7 +212,9 @@ export function MiniLeaderboardScene({ eventId, ev, layer, isLive }: SceneProps)
   const race = raceOf(ev, layer);
   const sex = layer.sex === "F" ? "F" : "M";
   const cfg = layoutOf(ev, "mini");
-  const { data } = useLive<any>(`/api/trail/events/${eventId}/leaderboard?race=${race?.id ?? ""}&sex=${sex}&limit=5`, ["trail:changed"], 3000);
+  const atPoint = layer.scene === "leaderboard_point_mini" && layer.point != null;
+  const { data } = useLive<any>(`/api/trail/events/${eventId}/leaderboard?race=${race?.id ?? ""}&sex=${sex}&limit=5${atPoint ? `&point=${layer.point}` : ""}`, ["trail:changed"], 3000);
+  const cp = atPoint ? race?.checkpoints?.find((c: any) => c.id === layer.point) : null;
   const { visible, animated } = useSceneAnim(isLive, 800);
   if (!visible || !race) return null;
   const accent = sexColor(sex);
@@ -240,10 +242,15 @@ export function MiniLeaderboardScene({ eventId, ev, layer, isLive }: SceneProps)
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 38, padding: "0 12px", background: `linear-gradient(90deg, ${accent}2b, rgba(8,12,18,0))`, borderBottom: `1px solid ${T.line}` }}>
             <div style={{ width: 5, height: 20, background: accent, borderRadius: 3 }} />
-            <span style={{ fontWeight: 900, fontSize: 18, color: T.white, textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{race.name}</span>
+            <span style={{ fontWeight: 900, fontSize: 18, color: T.white, textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cp ? cp.name : race.name}</span>
+            {cp && (
+              <span style={{ fontWeight: 800, fontSize: 14, color: T.muted, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                KM {String(cp.km).replace(".", ",")}
+              </span>
+            )}
             <span style={{ marginLeft: "auto", fontWeight: 900, fontSize: 12, letterSpacing: 2, color: accent, border: `1.5px solid ${accent}`, borderRadius: 999, padding: "1px 9px" }}>{SEX_LABEL[sex]}</span>
           </div>
-          {rows.length === 0 && <div style={{ padding: "10px 14px", color: T.muted, fontSize: 16 }}>Encara no hi ha cap pas per control.</div>}
+          {rows.length === 0 && <div style={{ padding: "10px 14px", color: T.muted, fontSize: 16 }}>{cp ? "Encara no hi ha passat ningú." : "Encara no hi ha cap pas per control."}</div>}
           {rows.map((r, i) => (
             <div
               key={r.bib}

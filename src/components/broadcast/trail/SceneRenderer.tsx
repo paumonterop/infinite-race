@@ -59,6 +59,7 @@ export function Scene(props: SceneProps & { shift?: boolean }) {
     case "race_stats":
       return <RaceStatsScene {...props} />;
     case "leaderboard_mini":
+    case "leaderboard_point_mini":
       return <MiniLeaderboardScene {...props} />;
     case "position_tag":
       return <PositionTagScene {...props} />;
