@@ -277,7 +277,7 @@ export function MiniLeaderboardScene({ eventId, ev, layer, isLive }: SceneProps)
 export function RaceStatsScene({ eventId, ev, layer, isLive }: SceneProps) {
   const base = raceOf(ev, layer);
   // dades fresques (l'esdeveniment del programa es refresca poc): es llegeix la cursa en directe
-  const { data: live } = useLive<any>(`/api/trail/events/${eventId}`, ["trail:changed"], 5000);
+  const { data: live } = useLive<any>(`/api/trail/events/${eventId}?lite=1`, ["trail:changed"], 5000);
   const race = live?.races?.find((r: any) => r.id === base?.id) ?? base;
   const { visible, animated } = useSceneAnim(isLive, 700);
   if (!visible || !race) return null;

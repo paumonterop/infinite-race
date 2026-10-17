@@ -15,7 +15,7 @@ import { checkpointsOnTrack } from "@/lib/trail/trackpos";
  */
 function Overlay({ id }: { id: string }) {
   const p = useSearchParams();
-  const { data: ev } = useLive<any>(`/api/trail/events/${id}`, ["trail:changed"], 30000);
+  const { data: ev } = useLive<any>(`/api/trail/events/${id}?lite=1`, ["trail:changed"], 30000);
   const [live, setLive] = useState(p.get("live") !== "0");
   const duration = parseFloat(p.get("duration") ?? "");
 

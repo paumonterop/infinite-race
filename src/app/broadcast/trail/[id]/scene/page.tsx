@@ -13,7 +13,7 @@ import type { Layer, SceneId } from "@/lib/trail/scenes";
  */
 function One({ id }: { id: string }) {
   const p = useSearchParams();
-  const { data: ev } = useLive<any>(`/api/trail/events/${id}`, ["trail:changed"], 20000);
+  const { data: ev } = useLive<any>(`/api/trail/events/${id}?lite=1`, ["trail:changed"], 20000);
   const num = (k: string) => (p.get(k) != null && p.get(k) !== "" ? Number(p.get(k)) : undefined);
   const layer: Layer = {
     scene: (p.get("scene") ?? "presentation_profile") as SceneId,

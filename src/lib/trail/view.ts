@@ -3,7 +3,8 @@ import { othersOf } from "./others";
 import type { TrailEvent } from "./types";
 
 /** Versió lleugera d'un esdeveniment per al navegador (traça reduïda, sense passos individuals). */
-export function eventView(ev: TrailEvent) {
+/** lite: sense el detall dels corredors (només estat i últim km), per a les sortides d'antena i les pàgines lleugeres */
+export function eventView(ev: TrailEvent, lite = false) {
   return {
     ...ev,
     others: othersOf(ev),
@@ -12,7 +13,9 @@ export function eventView(ev: TrailEvent) {
       gpx: r.gpx
         ? { file_name: r.gpx.file_name, total_km: r.gpx.total_km, elevation_gain: r.gpx.elevation_gain, track: simplifyForClient(r.gpx) }
         : null,
-      runners: r.runners.map(({ passings, ...rest }) => ({ ...rest, passings_count: passings.length })),
+      runners: lite
+        ? r.runners.map((x) => ({ status: x.status, last_point_km: x.last_point_km }))
+        : r.runners.map(({ passings, ...rest }) => ({ ...rest, passings_count: passings.length })),
     })),
   };
 }

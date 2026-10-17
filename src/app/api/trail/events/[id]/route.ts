@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { gzipSync } from "zlib";
 import { NextRequest, NextResponse } from "next/server";
 import { emitUpdate } from "@/lib/io";
 import { DEFAULT_LAYOUT, LayoutKey, layoutOf } from "@/lib/trail/layout";
@@ -6,10 +7,16 @@ import { previewBgOf } from "@/lib/trail/previewBg";
 import { getEvent, persistTrail, trailStore } from "@/lib/trail/store";
 import { eventView } from "@/lib/trail/view";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const ev = getEvent(params.id);
   if (!ev) return NextResponse.json({ error: "No existeix" }, { status: 404 });
-  return NextResponse.json(eventView(ev));
+  const lite = new URL(req.url).searchParams.get("lite") === "1";
+  const body = JSON.stringify(eventView(ev, lite));
+  // el servidor no comprimeix pel seu compte i l'enllaç és lent: es serveix en gzip
+  if (/gzip/.test(req.headers.get("accept-encoding") ?? "")) {
+    return new Response(gzipSync(body), { headers: { "Content-Type": "application/json", "Content-Encoding": "gzip", "Cache-Control": "no-store" } });
+  }
+  return new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
 }
 
 /** body: { name?, flag?, races?: [{ id, name?, color? }] } */

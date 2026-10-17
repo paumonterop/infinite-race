@@ -12,7 +12,7 @@ import type { Program } from "@/lib/trail/scenes";
  * (?transparent=0 per veure-la amb fons fosc al navegador).
  */
 function Output({ id }: { id: string }) {
-  const { data: ev } = useLive<any>(`/api/trail/events/${id}`, ["trail:changed"], 20000);
+  const { data: ev } = useLive<any>(`/api/trail/events/${id}?lite=1`, ["trail:changed"], 20000);
   const { data: prog } = useLive<Program>(`/api/trail/events/${id}/program`, ["trail:program"], 2000);
   return (
     <BroadcastFrame>
