@@ -34,7 +34,7 @@ export interface PresentationRace {
   distance_m: number | null;
   elevation_gain: number | null;
   gpx: { total_km: number; track: number[][] } | null;
-  checkpoints: { name: string; km: number }[];
+  checkpoints: { name: string; km: number }[]; // km sobre la traça (GPX)
 }
 
 interface Props {
@@ -116,7 +116,7 @@ export default function TrailPresentation({ race, eventName, isLive, showProfile
     const pts = race.checkpoints.map((c) => {
       const x = Math.min(Math.max((c.km / prof.total) * W, 0), W);
       const labelWidth = Math.max(90, c.name.length * 15 + 36);
-      return { x, y: prof.yOf(prof.eleAtKm(c.km)), labelX: x, labelWidth, name: c.name, labelY: LABEL_Y_TOP };
+      return { x, y: prof.yOf(prof.eleAtKm(c.km)), labelX: x, labelWidth, name: c.name, labelY: LABEL_Y_TOP, km: c.km };
     });
     pts.sort((a, b) => a.x - b.x);
     const ranges: [number, number][][] = Array.from({ length: ROWS }, () => []);
@@ -281,6 +281,30 @@ export default function TrailPresentation({ race, eventName, isLive, showProfile
               style={{ position: "absolute", top: PROFILE_TOP, left: "50%", width: W, height: H, transform: "translateX(-50%)", overflow: "visible" }}
               viewBox={`0 0 ${W} ${H}`}
             >
+              {/* rètol de la fila de punts quilomètrics */}
+              <text x={-16} y={H + 40} textAnchor="end" fill={ACCENT} fontSize="22" fontWeight="900" letterSpacing="3" fontFamily={T.font} style={{ opacity: 0.9 }}>
+                KM
+              </text>
+              {(() => {
+                // punt quilomètric de cada control sota la línia base; només s'omet si dos punts són tan a prop que se solaparien
+                let lastEnd = -Infinity;
+                return controls.map((pt, i) => {
+                  const txt = pt.km.toFixed(1).replace(".", ",");
+                  const half = txt.length * 8.2 + 3;
+                  const show = pt.x - half > lastEnd + 4;
+                  if (show) lastEnd = pt.x + half;
+                  return (
+                    <g key={"km" + pt.name + i} style={{ opacity: 0, animation: `pointFadeIn 0.4s ease-out ${i * 0.15}s forwards` }}>
+                      <line x1={pt.x} y1={H} x2={pt.x} y2={H + 12} stroke={T.white} strokeWidth="2" opacity="0.6" />
+                      {show && (
+                        <text x={pt.x} y={H + 40} textAnchor="middle" fill={T.white} fontSize="29" fontWeight="800" fontFamily={T.font} style={{ fontVariantNumeric: "tabular-nums" }}>
+                          {txt}
+                        </text>
+                      )}
+                    </g>
+                  );
+                });
+              })()}
               {controls.map((pt, i) => (
                 <g key={pt.name + i} style={{ opacity: 0, animation: `pointFadeIn 0.4s ease-out ${i * 0.15}s forwards` }}>
                   <line x1={pt.x} y1={pt.y} x2={pt.x} y2={pt.labelY + LABEL_H} stroke={T.white} strokeWidth="2" opacity="0.55" />

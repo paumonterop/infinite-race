@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import BroadcastFrame from "@/components/broadcast/BroadcastFrame";
 import TrailPresentation from "@/components/broadcast/TrailPresentation";
 import { useLive } from "@/lib/client/useLive";
+import { checkpointsOnTrack } from "@/lib/trail/trackpos";
 
 /**
  * Ús: /broadcast/trail/<id>/presentation?race=<raceId>[&profile=1][&duration=15][&flag=es-ct][&transparent=1]
@@ -35,7 +36,7 @@ function Overlay({ id }: { id: string }) {
             distance_m: race.distance_m,
             elevation_gain: race.elevation_gain,
             gpx: race.gpx ? { total_km: race.gpx.total_km, track: race.gpx.track } : null,
-            checkpoints: race.checkpoints.map((c: any) => ({ name: c.name, km: c.km })),
+            checkpoints: checkpointsOnTrack(race),
           }}
           eventName={ev?.name}
           isLive={live}

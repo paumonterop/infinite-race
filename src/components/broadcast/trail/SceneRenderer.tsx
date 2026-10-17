@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import TrailPresentation from "@/components/broadcast/TrailPresentation";
 import { Layer, Program, SCENE_BY_ID, Slot } from "@/lib/trail/scenes";
+import { checkpointsOnTrack } from "@/lib/trail/trackpos";
 import { ChronoAllScene, ChronoScene, GpsGradientScene, GpsSpeedScene } from "./ChronoGauges";
 import { FavoritesScene, HistoryRecordScene, HistoryWinnersScene, LeaderboardScene, MiniLeaderboardScene, PositionTagScene, RaceStatsScene } from "./ListScenes";
 import { ProfileLeadersScene } from "./ProfileScene";
@@ -20,7 +21,7 @@ function PresentationScene({ ev, layer, isLive }: SceneProps) {
         distance_m: race.distance_m,
         elevation_gain: race.elevation_gain,
         gpx: race.gpx ? { total_km: race.gpx.total_km, track: race.gpx.track } : null,
-        checkpoints: race.checkpoints.map((c: any) => ({ name: c.name, km: c.km })),
+        checkpoints: checkpointsOnTrack(race),
       }}
       eventName={ev?.name}
       isLive={isLive}
