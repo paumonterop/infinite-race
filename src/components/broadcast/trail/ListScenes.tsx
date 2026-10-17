@@ -2,7 +2,7 @@
 import { useLive } from "@/lib/client/useLive";
 import type { Favorite, HistEdition, HistResult } from "@/lib/trail/history";
 import { cornerStyle, isLeft, layoutOf } from "@/lib/trail/layout";
-import { ListFooter, ListHeader, ListPanel, Pill, RankRow, T, fmtGap, fmtHMS, sexColor, useSceneAnim } from "./ui";
+import { ListFooter, ListHeader, ListPanel, Pill, RankRow, T, fmtGap, fmtHMS, useSceneAnim } from "./ui";
 import { SceneProps, raceOf } from "./RaceScenes";
 
 const SEX_LABEL = { M: "HOMES", F: "DONES" };
@@ -14,7 +14,7 @@ export function LeaderboardScene({ eventId, ev, layer, isLive }: SceneProps) {
   const { data } = useLive<any>(`/api/trail/events/${eventId}/leaderboard?race=${race?.id ?? ""}&sex=${sex}&limit=10`, ["trail:changed"], 3000);
   const { visible, animated } = useSceneAnim(isLive, 700);
   if (!visible || !data?.rows) return null;
-  const accent = sexColor(sex);
+  const accent = (race?.color || T.accent);
   const rows = data.rows.map((r: any) => ({
     rank: r.rank,
     name: r.name,
@@ -43,7 +43,7 @@ export function FavoritesScene({ eventId, ev, layer, isLive }: SceneProps) {
   const { data } = useLive<{ rows: Favorite[] }>(`/api/trail/events/${eventId}/favorites?race=${race?.id ?? ""}&sex=${sex}`, [], 5 * 60_000);
   const { visible, animated } = useSceneAnim(isLive, 700);
   if (!visible || !data?.rows) return null;
-  const accent = sexColor(sex);
+  const accent = (race?.color || T.accent);
   const rows = data.rows.map((f) => ({
     rank: f.rank,
     name: f.name,
@@ -95,7 +95,7 @@ export function HistoryRecordScene({ eventId, ev, layer, isLive }: SceneProps) {
           index={i}
           total={2}
           animated={animated}
-          accent={sexColor(sex)}
+          accent={(race?.color || T.accent)}
         />
       ))}
       <ListFooter text={(() => { const d = data.record_m?.distance_m ?? data.record_f?.distance_m; return d ? `Edició de recorregut més semblant: ${Math.round(d / 1000)} km` : "Sense edicions anteriors comparables"; })()} />
@@ -138,7 +138,7 @@ export function HistoryWinnersScene({ eventId, ev, layer, isLive }: SceneProps) 
           >
             <div style={{ width: 96, fontWeight: 900, fontSize: 38, color: accent, fontVariantNumeric: "tabular-nums" }}>{e.year}</div>
             {([["M", e.winner_m], ["F", e.winner_f]] as const).map(([sex, w]) => (
-              <div key={sex} style={{ flex: 1, minWidth: 0, borderLeft: `3px solid ${sexColor(sex)}`, paddingLeft: 14 }}>
+              <div key={sex} style={{ flex: 1, minWidth: 0, borderLeft: `3px solid ${(race?.color || T.accent)}`, paddingLeft: 14 }}>
                 <div style={{ fontWeight: 900, fontSize: 25, color: T.white, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{w?.name ?? "—"}</div>
                 <div style={{ fontWeight: 800, fontSize: 22, color: T.muted, fontVariantNumeric: "tabular-nums" }}>{w ? fmtHMS(w.time_s) : ""}</div>
               </div>
@@ -166,7 +166,7 @@ export function PositionTagScene({ eventId, ev, layer, isLive }: SceneProps) {
   const { visible, animated } = useSceneAnim(isLive, 800);
   if (!visible || !race) return null;
   const who = data?.rows?.[pos - 1];
-  const accent = race.color || sexColor(sex);
+  const accent = race.color || (race?.color || T.accent);
   const dx = isLeft(cfg.corner) ? -80 : 80;
   return (
     <div style={{ position: "absolute", top: 0, left: 0, width: 1920, height: 1080, pointerEvents: "none", fontFamily: T.font }}>
@@ -190,7 +190,7 @@ export function PositionTagScene({ eventId, ev, layer, isLive }: SceneProps) {
               {ORDINAL[pos]}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 16px 8px 13px", minWidth: 0 }}>
-              <span style={{ fontWeight: 900, fontSize: 24, color: sexColor(sex), letterSpacing: 1.5 }}>{sex === "F" ? "DONA" : "HOME"}</span>
+              <span style={{ fontWeight: 900, fontSize: 24, color: (race?.color || T.accent), letterSpacing: 1.5 }}>{sex === "F" ? "DONA" : "HOME"}</span>
               <span style={{ fontWeight: 900, fontSize: 20, color: T.muted }}>·</span>
               <span style={{ fontWeight: 900, fontSize: 24, color: T.white, textTransform: "uppercase", letterSpacing: 0.4, whiteSpace: "nowrap" }}>{race.name}</span>
             </div>
@@ -217,7 +217,7 @@ export function MiniLeaderboardScene({ eventId, ev, layer, isLive }: SceneProps)
   const cp = atPoint ? race?.checkpoints?.find((c: any) => c.id === layer.point) : null;
   const { visible, animated } = useSceneAnim(isLive, 800);
   if (!visible || !race) return null;
-  const accent = sexColor(sex);
+  const accent = (race?.color || T.accent);
   const rows: any[] = (data?.rows ?? []).slice(0, 5);
   const dx = isLeft(cfg.corner) ? -60 : 60;
   const style = { ...cornerStyle(cfg) };

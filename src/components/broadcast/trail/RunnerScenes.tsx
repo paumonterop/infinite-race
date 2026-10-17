@@ -85,7 +85,7 @@ export function RunnerChyronScene({ eventId, ev, layer, isLive }: SceneProps) {
   const fit = useFitWidth(name, { max: 46, min: 20 });
   if (!visible || !d) return null;
 
-  const accent = d.runner.sex === "F" ? T.women : race?.color || T.accent;
+  const accent = race?.color || T.accent;
   const barOn = phase !== "hidden" && phase !== "bar_out";
   const avatarShown = ["text_in", "visible", "text_out"].includes(phase);
   const textOn = ["text_in", "visible"].includes(phase);
@@ -166,7 +166,7 @@ export function RunnerCardScene({ eventId, ev, layer, isLive }: SceneProps) {
   if (!visible || !d) return null;
 
   const r = d.runner;
-  const accent = r.sex === "F" ? T.women : d.race.color || T.accent;
+  const accent = d.race.color || T.accent;
   const redOn = phase !== "hidden" && phase !== "bar_out";
   const cardRendered = ["avatar_in", "text_in", "visible", "text_out"].includes(phase);
   const animated = ["text_in", "visible", "text_out"].includes(phase);
