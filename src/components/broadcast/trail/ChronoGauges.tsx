@@ -57,6 +57,21 @@ function clockText(startIso: string | null, now: number) {
   return { text: hhmmss(diff < 0 ? 0 : diff), before: false };
 }
 
+const CLOCK_W = 312; // amplada fixa: no varia amb els dígits ni amb el nom de la cursa
+
+/** Cada caràcter en una caixa d'amplada fixa: els dígits no fan ballar l'amplada encara que la font no sigui tabular. */
+function FixedDigits({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("").map((ch, i) => (
+        <span key={i} style={{ display: "inline-block", width: /[0-9]/.test(ch) ? "0.64em" : "0.32em", textAlign: "center" }}>
+          {ch}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function Clock({ show, text, label, color, before, fromLeft = false }: { show: boolean; text: string; label?: string; color: string; before?: boolean; fromLeft?: boolean }) {
   return (
     <div
@@ -64,6 +79,7 @@ function Clock({ show, text, label, color, before, fromLeft = false }: { show: b
         display: "flex",
         alignItems: "stretch",
         height: 64,
+        width: CLOCK_W,
         borderRadius: 14,
         overflow: "hidden",
         boxSizing: "border-box",
@@ -81,10 +97,10 @@ function Clock({ show, text, label, color, before, fromLeft = false }: { show: b
           <path d="M12 9v4l3 2M9 2h6" />
         </svg>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 22px", minWidth: 200 }}>
-        {label ? <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, color: T.muted, textTransform: "uppercase", lineHeight: 1 }}>{before ? `${label} · SORTIDA EN` : label}</span> : null}
-        <span style={{ fontSize: 40, fontWeight: 900, color: before ? T.amber : T.white, letterSpacing: 1, fontVariantNumeric: "tabular-nums", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-          {text}
+      <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 22px", flex: 1, minWidth: 0 }}>
+        {label ? <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, color: T.muted, textTransform: "uppercase", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{before ? `${label} · SORTIDA EN` : label}</span> : null}
+        <span style={{ fontSize: 40, fontWeight: 900, color: before ? T.amber : T.white, fontVariantNumeric: "tabular-nums", lineHeight: 1.1, whiteSpace: "nowrap" }}>
+          <FixedDigits text={text} />
         </span>
       </div>
     </div>
