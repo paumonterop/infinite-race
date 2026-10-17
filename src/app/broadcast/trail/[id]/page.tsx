@@ -17,7 +17,7 @@ function Output({ id }: { id: string }) {
   return (
     <BroadcastFrame>
       {ev && prog?.layers && <ProgramStage eventId={id} ev={ev} program={prog} />}
-      {prog?.ticker && <TrailTicker eventId={id} raceId={null} backlog={0} />}
+      {prog?.ticker && <TrailTicker eventId={id} raceId={null} backlog={0} speed={ev?.ticker_speed} />}
     </BroadcastFrame>
   );
 }

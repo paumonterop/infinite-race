@@ -4,6 +4,7 @@ import TrailNav from "@/components/trail/TrailNav";
 import { useLive } from "@/lib/client/useLive";
 import { fmtDate } from "@/lib/client/format";
 import { KNOWN_DEVICE_IDS, defaultLabel } from "@/lib/trail/devices";
+import { DEFAULT_TICKER_SPEED } from "@/components/broadcast/TrailTicker";
 import { DEFAULT_PREVIEW_BG, GREEN, PREVIEW_BG_LABEL, PreviewBg, PreviewBgMode, previewBgOf, previewBgStyle } from "@/lib/trail/previewBg";
 import { CORNER_LABEL, Corner, DEFAULT_LAYOUT, LAYOUT_LABEL, LayoutCfg, LayoutKey, layoutOf } from "@/lib/trail/layout";
 import type { GpsPosition } from "@/lib/trail/types";
@@ -22,6 +23,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
   const [vtest, setVtest] = useState<string | null>(null);
   const [layout, setLayout] = useState<Record<LayoutKey, LayoutCfg>>(DEFAULT_LAYOUT);
   const [pbg, setPbg] = useState<PreviewBg>(DEFAULT_PREVIEW_BG);
+  const [tspeed, setTspeed] = useState<number>(DEFAULT_TICKER_SPEED);
   const { data: gps } = useLive<GpsPosition[]>(`/api/trail/events/${id}/gps`, [], 5000);
   const { data: vstat } = useLive<VmixStatus>(`/api/trail/events/${id}/vmix`, [], 2000);
 
@@ -32,6 +34,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
     setColors((c) => (Object.keys(c).length ? c : Object.fromEntries(ev.races.map((r: any) => [r.id, r.color]))));
     setLayout({ chrono: layoutOf(ev, "chrono"), tag: layoutOf(ev, "tag"), mini: layoutOf(ev, "mini") });
     setPbg(previewBgOf(ev));
+    setTspeed(ev.ticker_speed ?? DEFAULT_TICKER_SPEED);
     setVip((v) => v || ev.vmix?.ip || "");
     setVport((v) => (ev.vmix?.port ? String(ev.vmix.port) : v));
     setVmap((m) => (Object.keys(m).length ? m : Object.fromEntries(Object.entries(ev.vmix?.input_map ?? {}).map(([k, n]) => [k, String(n)]))));
@@ -49,6 +52,7 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
         vmix: { ip: vip, port: vport, input_map: vmap },
         layout: { chrono: layout.chrono },
         preview_bg: pbg,
+        ticker_speed: tspeed,
       }),
     });
     setMsg(res.ok ? "Desat ✓" : "⚠ Error en desar");
@@ -147,6 +151,17 @@ export default function ConfigPage({ params }: { params: { id: string } }) {
           </div>
           <div className="mt-3 aspect-video w-72 overflow-hidden rounded-lg border border-white/10" style={previewBgStyle(pbg)}>
             <div className="m-3 inline-block rounded-md bg-[#0b0f14] px-3 py-1.5 text-sm font-black">Exemple d&apos;escena</div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 p-5">
+          <h2 className="mb-1 text-xs font-bold tracking-widest text-slate-400">VELOCITAT DEL TICKER DE PASSOS</h2>
+          <p className="mb-3 text-xs text-slate-500">Píxels per segon de la cinta (per defecte {DEFAULT_TICKER_SPEED}). Es desa amb «Desar» i s&apos;aplica a l&apos;antena en uns segons.</p>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-slate-500">lent</span>
+            <input type="range" min={20} max={300} step={5} value={tspeed} onChange={(e) => setTspeed(parseInt(e.target.value, 10))} className="w-72" />
+            <span className="text-xs text-slate-500">ràpid</span>
+            <span className="w-20 font-mono text-sm font-bold">{tspeed} px/s</span>
           </div>
         </section>
 

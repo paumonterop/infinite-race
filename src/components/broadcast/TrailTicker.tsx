@@ -6,8 +6,8 @@ import type { FeedItem } from "@/lib/trail/feed";
 const CARD_W = 620;
 const GAP = 16;
 const SCREEN_W = 1920;
-const BASE_SPEED = 110; // px/s amb la cua buida
-const MAX_SPEED = 420; // px/s quan la cua s'acumula
+export const DEFAULT_TICKER_SPEED = 70; // px/s (es canvia a Configuració)
+const MAX_QUEUE = 40; // si s'acumulen més passos, es descarten els més antics
 
 function fmtTime(s: number) {
   const h = Math.floor(s / 3600);
@@ -18,14 +18,15 @@ function fmtTime(s: number) {
 
 /**
  * Cinta de passos per control en temps real. Cada pas nou entra a una cua; quan hi ha espai
- * a la dreta de la cinta, el següent de la cua hi entra. Si la cua creix, la cinta accelera.
+ * a la dreta de la cinta, el següent de la cua hi entra. Velocitat constant (Configuració).
  */
-export default function TrailTicker({ eventId, raceId, backlog = 6 }: { eventId: string; raceId?: string | null; backlog?: number }) {
+export default function TrailTicker({ eventId, raceId, backlog = 6, speed = DEFAULT_TICKER_SPEED }: { eventId: string; raceId?: string | null; backlog?: number; speed?: number }) {
   const queue = useRef<FeedItem[]>([]);
   const seq = useRef<number | null>(null);
   const cards = useRef<{ el: HTMLDivElement; x: number }[]>([]);
   const pendingX = useRef(SCREEN_W);
-  const [pending, setPending] = useState(0);
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
 
   // Recepció de passos nous (socket + poll de seguretat)
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function TrailTicker({ eventId, raceId, backlog = 6 }: { eventId:
         seq.current = d.seq;
         if (d.items.length) {
           queue.current.push(...d.items);
-          setPending(queue.current.length);
+          if (queue.current.length > MAX_QUEUE) queue.current.splice(0, queue.current.length - MAX_QUEUE);
         }
       } catch {
         /* reintent al proper cicle */
@@ -69,8 +70,7 @@ export default function TrailTicker({ eventId, raceId, backlog = 6 }: { eventId:
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      const backlogN = queue.current.length;
-      const speed = Math.min(MAX_SPEED, BASE_SPEED + backlogN * 40);
+      const speed = speedRef.current;
       // desplaça
       for (const c of cards.current) {
         c.x -= speed * dt;
@@ -89,7 +89,6 @@ export default function TrailTicker({ eventId, raceId, backlog = 6 }: { eventId:
         const item = queue.current.shift()!;
         liveRef.current = [...liveRef.current, item];
         setLive(liveRef.current);
-        setPending(queue.current.length);
         pendingX.current = Math.max(SCREEN_W, edge);
       }
       raf = requestAnimationFrame(tick);
@@ -137,9 +136,7 @@ export default function TrailTicker({ eventId, raceId, backlog = 6 }: { eventId:
         }}
       >
         <div style={{ fontWeight: 900, fontSize: 30, lineHeight: 1 }}>PASSOS</div>
-        <div style={{ fontWeight: 700, fontSize: 18, opacity: 0.75, marginTop: 4 }}>
-          {pending > 0 ? `+${pending} en cua` : "EN DIRECTE"}
-        </div>
+        <div style={{ fontWeight: 700, fontSize: 18, opacity: 0.75, marginTop: 4 }}>EN DIRECTE</div>
       </div>
 
       <div style={{ position: "absolute", inset: 0 }}>

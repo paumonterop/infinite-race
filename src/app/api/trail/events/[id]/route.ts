@@ -33,6 +33,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     ev.layout = next;
   }
+  if (b.ticker_speed != null) {
+    const v = parseInt(String(b.ticker_speed), 10);
+    if (!Number.isNaN(v)) ev.ticker_speed = Math.max(20, Math.min(300, v));
+  }
   if (b.preview_bg && typeof b.preview_bg === "object") ev.preview_bg = previewBgOf({ preview_bg: b.preview_bg });
   if (b.vmix && typeof b.vmix === "object") {
     const map: Record<string, number> = {};

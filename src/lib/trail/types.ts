@@ -78,6 +78,7 @@ export interface TrailEvent {
   layout?: Partial<Record<LayoutKey, LayoutCfg>>;
   /** Fons de la previsualització/programa de la consola de broadcast. */
   preview_bg?: PreviewBg;
+  ticker_speed?: number; // px/s de la cinta de passos (Configuració)
   /** Lectura de vMix per triar automàticament la motxilla en programa. input_map: motxilla -> número d'input. */
   vmix?: { ip: string; port: number; input_map: Record<string, number> };
   livetrail: {
