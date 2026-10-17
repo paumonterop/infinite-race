@@ -114,6 +114,28 @@ app.prepare().then(() => {
     fetch(`http://127.0.0.1:${port}/api/internal/trail-tick`, { method: "POST" }).catch(() => {});
   }, 1000);
 
+  // Instància local: els GPS arriben a un altre servidor (GPS_UPSTREAM=http://ip:3000); es consulten d'allà cada segon.
+  const UP = (process.env.GPS_UPSTREAM || "").replace(/\/$/, "");
+  if (UP) {
+    const headers = process.env.GPS_UPSTREAM_AUTH ? { Authorization: "Basic " + Buffer.from(process.env.GPS_UPSTREAM_AUTH).toString("base64") } : {};
+    let busy = false;
+    setInterval(async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        const r = await fetch(UP + "/api/gps-raw", { headers, signal: AbortSignal.timeout(4000) });
+        const d = await r.json();
+        const raw = (global.__gps_raw__ = global.__gps_raw__ || {});
+        for (const [id, g] of Object.entries(d.gps || {})) raw[id] = { ...g, received_at: Date.now() - Math.max(0, d.now - g.received_at) };
+      } catch (e) {
+        /* sense connexió amb el servidor de GPS: es conserva l'última posició (caduca sola als 10 s) */
+      } finally {
+        busy = false;
+      }
+    }, 1000);
+    console.log("> GPS des de " + UP);
+  }
+
   httpServer.listen(port, () => {
     console.log(`> INFINITE RACE server ready on http://${hostname}:${port}`);
   });
