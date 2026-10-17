@@ -32,7 +32,12 @@ export default function TrailTicker({ eventId, raceId, backlog = 6, speed = DEFA
   useEffect(() => {
     let stop = false;
     const q = raceId ? `&race=${encodeURIComponent(raceId)}` : "";
+    let inflight = false;
     const pull = async () => {
+      // el socket i el poll poden disparar alhora: dues peticions amb el mateix `since` duplicarien els passos
+      // (claus repetides → targetes orfes que queden quietes i se solapen)
+      if (inflight) return;
+      inflight = true;
       try {
         const url =
           seq.current == null
@@ -42,12 +47,17 @@ export default function TrailTicker({ eventId, raceId, backlog = 6, speed = DEFA
         if (!res.ok || stop) return;
         const d = await res.json();
         seq.current = d.seq;
-        if (d.items.length) {
-          queue.current.push(...d.items);
+        // a més, mai s'accepta un pas que ja s'hagi vist (cua o cinta)
+        const seen = new Set([...queue.current, ...liveRef.current].map((x) => x.seq));
+        const fresh = (d.items as FeedItem[]).filter((x) => !seen.has(x.seq));
+        if (fresh.length) {
+          queue.current.push(...fresh);
           if (queue.current.length > MAX_QUEUE) queue.current.splice(0, queue.current.length - MAX_QUEUE);
         }
       } catch {
         /* reintent al proper cicle */
+      } finally {
+        inflight = false;
       }
     };
     pull();
@@ -82,10 +92,12 @@ export default function TrailTicker({ eventId, raceId, backlog = 6, speed = DEFA
         liveRef.current = liveRef.current.slice(1);
         setLive(liveRef.current);
       }
-      // entra la següent si hi ha espai a la dreta
+      // entra la següent si hi ha espai a la dreta; mai abans que l'anterior s'hagi pintat (si no, totes dues es
+      // calcularien des de la mateixa última targeta i sortirien a la mateixa x, enganxades i solapades)
       const lastCard = cards.current[cards.current.length - 1];
       const edge = lastCard ? lastCard.x + CARD_W + GAP : 0;
-      if (queue.current.length && edge <= SCREEN_W) {
+      const allPainted = cards.current.length === liveRef.current.length;
+      if (queue.current.length && allPainted && edge <= SCREEN_W) {
         const item = queue.current.shift()!;
         liveRef.current = [...liveRef.current, item];
         setLive(liveRef.current);
